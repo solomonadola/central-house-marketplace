@@ -5,7 +5,7 @@ import Listing from '../models/listing.model.js';
 
 export const test = (req, res) => {
   res.json({
-    message: 'Api route is working!',
+    message: 'test Api route is running qutite well!',
   });
 };
 
