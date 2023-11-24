@@ -8,7 +8,7 @@ Central House Marketplace is a one-stop-shop for all your housing needs. Whether
 
 ## Usage
 
-To use Central House Marketplace, simply visit our website at [www.centralhousemarketplace.com][(www.centralhousemarketplace.com)] and follow these steps:
+To use Central House Marketplace, simply visit our website at [www.centralhousemarketplace.com]() and follow these steps:
 
 1. Create an account.
 2. Browse available properties.
