@@ -12,6 +12,7 @@ import SavedSearch from '../models/savedSearch.model.js';
 import ListingQuestion from '../models/listingQuestion.model.js';
 import OpenHouse from '../models/openHouse.model.js';
 import MaintenanceRequest from '../models/maintenanceRequest.model.js';
+import QuickReply from '../models/quickReply.model.js';
 import { errorHandler } from '../utils/error.js';
 
 export const EXPORT_VERSION = 1;
@@ -47,6 +48,7 @@ export const exportMyData = async (req, res, next) => {
       questions,
       openHouseRsvps,
       maintenanceRequests,
+      quickReplies,
     ] = await Promise.all([
       Listing.find({ userRef: userId }).lean(),
       Message.find({ conversation: { $in: conversationIds } }).sort({ createdAt: 1 }).lean(),
@@ -60,6 +62,7 @@ export const exportMyData = async (req, res, next) => {
       ListingQuestion.find({ asker: userId }).populate('listing', 'name').lean(),
       OpenHouse.find({ 'rsvps.user': userId }, 'listing startsAt endsAt cancelled').populate('listing', 'name').lean(),
       MaintenanceRequest.find({ $or: [{ tenant: userId }, { owner: userId }] }, '-updates').populate('listing', 'name').lean(),
+      QuickReply.find({ owner: userId }, 'title body').lean(),
     ]);
 
     const usernames = new Map();
@@ -107,6 +110,7 @@ export const exportMyData = async (req, res, next) => {
       applications,
       payments,
       maintenanceRequests,
+      quickReplies,
       notifications,
     };
 

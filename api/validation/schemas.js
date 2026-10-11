@@ -378,3 +378,23 @@ export const maintenanceUpdateSchema = z
       .optional(),
   })
   .refine((v) => v.body.length > 0 || v.status, { message: 'Write an update or change the status' });
+
+const quickReplyFields = {
+  title: z
+    .string({ required_error: 'Give the reply a short name' })
+    .trim()
+    .min(1, 'Give the reply a short name')
+    .max(40, 'Name must be at most 40 characters'),
+  body: z
+    .string({ required_error: 'Reply text is required' })
+    .trim()
+    .min(1, 'Reply text is required')
+    .max(1000, 'Reply must be at most 1000 characters'),
+};
+
+export const createQuickReplySchema = z.object(quickReplyFields);
+
+export const updateQuickReplySchema = z
+  .object(quickReplyFields)
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to update' });
