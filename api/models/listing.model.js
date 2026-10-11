@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { AMENITIES, PROPERTY_TYPES } from '../constants/listing.js';
 
 const listingSchema = new mongoose.Schema(
   {
@@ -42,6 +43,9 @@ const listingSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    // The kind of property and its features, used for filtering and display.
+    propertyType: { type: String, enum: PROPERTY_TYPES, default: 'apartment' },
+    amenities: { type: [{ type: String, enum: AMENITIES }], default: [] },
     offer: {
       type: Boolean,
       required: true,
@@ -74,6 +78,9 @@ const listingSchema = new mongoose.Schema(
     // 'moderation' when an admin hid it; 'suspension' when the owner was
     // suspended, so unsuspending only restores those.
     hiddenBy: { type: String, enum: ['moderation', 'suspension', null], default: null },
+    // Owners can pause a listing without deleting it: it disappears from
+    // search but stays on their dashboard.
+    active: { type: Boolean, default: true },
     views: {
       type: Number,
       default: 0,
