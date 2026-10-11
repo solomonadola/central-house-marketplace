@@ -2,6 +2,7 @@ import Listing from '../models/listing.model.js';
 import User from '../models/user.model.js';
 import Review from '../models/review.model.js';
 import Viewing from '../models/viewing.model.js';
+import ListingViewDay, { utcDay } from '../models/listingViewDay.model.js';
 import { errorHandler } from '../utils/error.js';
 import { geocodeAddress } from '../utils/geocode.js';
 
@@ -58,6 +59,7 @@ export const deleteListing = async (req, res, next) => {
     await User.updateMany({ favorites: listing._id }, { $pull: { favorites: listing._id } });
     await Review.deleteMany({ listing: listing._id });
     await Viewing.deleteMany({ listing: listing._id });
+    await ListingViewDay.deleteMany({ listing: listing._id });
     res.status(200).json('Listing has been deleted!');
   } catch (error) {
     next(error);
@@ -101,6 +103,11 @@ export const recordView = async (req, res, next) => {
       { new: true, projection: { views: 1 } }
     );
     if (!listing) return next(errorHandler(404, 'Listing not found!'));
+    await ListingViewDay.updateOne(
+      { listing: listing._id, day: utcDay() },
+      { $inc: { count: 1 } },
+      { upsert: true }
+    );
     res.status(200).json({ views: listing.views });
   } catch (error) {
     next(error);

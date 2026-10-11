@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api, createListing, createUser, signedInAgent, validListing } from './helpers.js';
 import Listing from '../models/listing.model.js';
+import ListingViewDay from '../models/listingViewDay.model.js';
 import { geocodeAddress } from '../utils/geocode.js';
 
 vi.mock('../utils/geocode.js', () => ({ geocodeAddress: vi.fn() }));
@@ -204,6 +205,9 @@ describe('POST /api/listing/view/:id', () => {
 
     expect(res.body).toEqual({ views: 2 });
     expect((await Listing.findById(listing._id)).views).toBe(2);
+    const days = await ListingViewDay.find({ listing: listing._id });
+    expect(days).toHaveLength(1);
+    expect(days[0]).toMatchObject({ day: new Date().toISOString().slice(0, 10), count: 2 });
   });
 
   it('starts new listings at zero views', async () => {

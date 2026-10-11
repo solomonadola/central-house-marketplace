@@ -7,6 +7,7 @@ import Message from '../models/message.model.js';
 import Review from '../models/review.model.js';
 import Report from '../models/report.model.js';
 import Viewing from '../models/viewing.model.js';
+import ListingViewDay from '../models/listingViewDay.model.js';
 import { updateListingRating } from '../utils/ratings.js';
 import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
 import { sendVerificationEmail } from '../utils/emailVerification.js';
@@ -64,6 +65,7 @@ export const deleteUser = async (req, res, next) => {
     await User.findByIdAndDelete(req.params.id);
     const listingIds = await Listing.find({ userRef: req.params.id }).distinct('_id');
     await Listing.deleteMany({ _id: { $in: listingIds } });
+    await ListingViewDay.deleteMany({ listing: { $in: listingIds } });
     await User.updateMany(
       { favorites: { $in: listingIds } },
       { $pull: { favorites: { $in: listingIds } } }
