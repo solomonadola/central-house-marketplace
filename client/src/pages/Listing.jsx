@@ -26,6 +26,7 @@ import ListingGrid from '../components/ListingGrid';
 import ListingsMap from '../components/ListingsMap';
 import ListingReviews from '../components/ListingReviews';
 import PriceHistory from '../components/PriceHistory';
+import ListingQuestions from '../components/ListingQuestions';
 import ListingAvailability from '../components/ListingAvailability';
 import ReportListing from '../components/ReportListing';
 import RequestViewing from '../components/RequestViewing';
@@ -307,6 +308,7 @@ export default function Listing() {
 
           <PriceHistory listingId={listing._id} perMonth={listing.type === 'rent'} />
           <ListingReviews listingId={listing._id} />
+          <ListingQuestions listingId={listing._id} />
           {currentUser && !isOwner && <ReportListing listingId={listing._id} />}
         </div>
 

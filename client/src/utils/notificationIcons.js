@@ -10,6 +10,8 @@ import {
   FaEye,
   FaEyeSlash,
   FaFlag,
+  FaQuestionCircle,
+  FaCommentDots,
   FaHeartBroken,
   FaFileAlt,
   FaMoneyCheckAlt,
@@ -40,6 +42,8 @@ export const NOTIFICATION_ICONS = {
   payment_received: { Icon: FaMoneyCheckAlt, tone: 'text-green-600 bg-green-50' },
   payment_refunded: { Icon: FaMoneyCheckAlt, tone: 'text-sky-600 bg-sky-50' },
   price_drop: { Icon: FaArrowDown, tone: 'text-emerald-600 bg-emerald-50' },
+  question_asked: { Icon: FaQuestionCircle, tone: 'text-amber-600 bg-amber-50' },
+  question_answered: { Icon: FaCommentDots, tone: 'text-sky-600 bg-sky-50' },
 };
 
 const FALLBACK = { Icon: FaBell, tone: 'text-slate-600 bg-slate-100' };
