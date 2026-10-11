@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { MdLocationOn } from 'react-icons/md';
+import FavoriteButton from './FavoriteButton';
 
 export default function ListingItem({ listing }) {
   return (
-    <div className='bg-white shadow-md hover:shadow-lg transition-shadow overflow-hidden rounded-lg w-full sm:w-[330px]'>
+    <div className='relative bg-white shadow-md hover:shadow-lg transition-shadow overflow-hidden rounded-lg w-full sm:w-[330px]'>
+      <FavoriteButton listingId={listing._id} className='absolute top-3 right-3 z-10' />
       <Link to={`/listing/${listing._id}`}>
         <img
           src={
