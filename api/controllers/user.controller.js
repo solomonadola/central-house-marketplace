@@ -17,6 +17,7 @@ import ListingQuestion from '../models/listingQuestion.model.js';
 import OpenHouse from '../models/openHouse.model.js';
 import MaintenanceRequest from '../models/maintenanceRequest.model.js';
 import QuickReply from '../models/quickReply.model.js';
+import ListingDraft from '../models/listingDraft.model.js';
 import { updateListingRating } from '../utils/ratings.js';
 import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
 import { sendVerificationEmail } from '../utils/emailVerification.js';
@@ -104,6 +105,7 @@ export const deleteUser = async (req, res, next) => {
       Notification.deleteMany({ recipient: userId }),
       User.updateMany({ blockedUsers: userId }, { $pull: { blockedUsers: userId } }),
       QuickReply.deleteMany({ owner: userId }),
+      ListingDraft.deleteMany({ owner: userId }),
       Message.deleteMany({ conversation: { $in: conversationIds } }),
       Conversation.deleteMany({ _id: { $in: conversationIds } }),
     ]);

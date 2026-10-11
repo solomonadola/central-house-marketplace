@@ -415,3 +415,26 @@ export const setTwoFactorSchema = z.object({
   enabled: z.boolean({ invalid_type_error: 'Enabled must be true or false', required_error: 'Enabled is required' }),
   password: z.string({ required_error: 'Enter your password to confirm' }).min(1, 'Enter your password to confirm'),
 });
+
+// Drafts may be incomplete, so only types and upper bounds are checked
+// here; publishing runs the full createListingSchema.
+export const listingDraftSchema = z.object({
+  data: z
+    .object({
+      name: z.string().max(62, 'Name must be at most 62 characters'),
+      description: z.string().max(5000, 'Description must be at most 5000 characters'),
+      address: z.string().max(200, 'Address must be at most 200 characters'),
+      regularPrice: z.coerce.number().min(0).max(10_000_000),
+      discountPrice: z.coerce.number().min(0).max(10_000_000),
+      bathrooms: z.coerce.number().int().min(0).max(10),
+      bedrooms: z.coerce.number().int().min(0).max(10),
+      furnished: z.boolean(),
+      parking: z.boolean(),
+      offer: z.boolean(),
+      type: z.enum(['rent', 'sale']),
+      propertyType: z.enum(PROPERTY_TYPES),
+      amenities: z.array(z.enum(AMENITIES)).max(20),
+      imageUrls: z.array(httpUrl('Image must be a URL')).max(6, 'You can upload at most 6 images'),
+    })
+    .partial(),
+});
