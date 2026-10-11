@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import bcryptjs from 'bcryptjs';
 import User from './models/user.model.js';
 import Listing from './models/listing.model.js';
+import Conversation from './models/conversation.model.js';
+import Message from './models/message.model.js';
 dotenv.config();
 
 // Seed data is tagged by this email domain so re-running the script only
@@ -83,12 +85,35 @@ const listings = [
 
 const pick = (arr, i) => arr[i % arr.length];
 
+// Sample conversations: [buyer index, listing index, messages as
+// [sender: 'buyer' | 'owner', text, minutes ago], read by both?]. Listing i is owned by
+// user i % 4, so Sarah (user 0) owns listings 0, 4, 8, ...
+const conversations = [
+  [1, 0, [
+    ['buyer', 'Hi Sarah, is the family home on Noe Street still available?', 300],
+    ['owner', 'Hi David, yes it is! Are you looking to buy soon?', 280],
+    ['buyer', 'Within the next couple of months. Could I arrange a viewing this Saturday?', 20],
+  ]],
+  [0, 2, [
+    ['buyer', 'Hello Maria, does the villa price include the furniture?', 1500],
+    ['owner', 'Hi! Yes, the villa is sold fully furnished, including the outdoor furniture.', 45],
+  ]],
+  [3, 4, [
+    ['buyer', 'Is parking included with the Mission Bay apartment?', 4000],
+    ['owner', 'Yes, it comes with one dedicated parking space in the garage.', 3900],
+    ['buyer', 'Perfect, thanks!', 3850],
+  ], true],
+];
+
 const seed = async () => {
   await mongoose.connect(process.env.DB);
   console.log('Connected to MongoDB');
 
   const oldUsers = await User.find({ email: { $regex: `${SEED_DOMAIN}$` } });
   const oldIds = oldUsers.map((u) => u._id.toString());
+  const oldConversations = await Conversation.find({ 'participants.user': { $in: oldIds } }).distinct('_id');
+  await Message.deleteMany({ conversation: { $in: oldConversations } });
+  await Conversation.deleteMany({ _id: { $in: oldConversations } });
   const { deletedCount: removedListings } = await Listing.deleteMany({ userRef: { $in: oldIds } });
   await User.deleteMany({ _id: { $in: oldIds } });
   console.log(`Removed ${oldUsers.length} demo users and ${removedListings} demo listings`);
@@ -119,9 +144,46 @@ const seed = async () => {
       createdAt: new Date(now - i * 36 * 60 * 60 * 1000),
     })
   );
-  await Listing.insertMany(docs);
+  const createdListings = await Listing.insertMany(docs);
 
-  console.log(`Created ${createdUsers.length} demo users and ${docs.length} listings`);
+  for (const [buyerIndex, listingIndex, thread, readByBoth = false] of conversations) {
+    const buyer = createdUsers[buyerIndex]._id;
+    const listing = createdListings[listingIndex];
+    const owner = listing.userRef;
+    const at = (minutesAgo) => new Date(now - minutesAgo * 60 * 1000);
+    const last = thread.at(-1);
+    const lastSender = last[0] === 'buyer' ? buyer : owner;
+
+    // Each side has read up to their own latest message.
+    const lastReadBy = (role) => {
+      if (readByBoth) return at(last[2]);
+      const mine = thread.filter(([sender]) => sender === role).at(-1);
+      return mine ? at(mine[2]) : new Date(0);
+    };
+
+    const conversation = await Conversation.create({
+      listing: listing._id,
+      buyer,
+      owner,
+      participants: [
+        { user: buyer, lastReadAt: lastReadBy('buyer') },
+        { user: owner, lastReadAt: lastReadBy('owner') },
+      ],
+      lastMessage: { body: last[1], sender: lastSender, createdAt: at(last[2]) },
+    });
+    await Message.insertMany(
+      thread.map(([sender, body, minutesAgo]) => ({
+        conversation: conversation._id,
+        sender: sender === 'buyer' ? buyer : owner,
+        body,
+        createdAt: at(minutesAgo),
+      }))
+    );
+  }
+
+  console.log(
+    `Created ${createdUsers.length} demo users, ${docs.length} listings and ${conversations.length} conversations`
+  );
   console.log(`Demo login: ${createdUsers[0].email} / ${SEED_PASSWORD}`);
 };
 
