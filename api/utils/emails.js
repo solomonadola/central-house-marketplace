@@ -46,3 +46,20 @@ export const notificationEmail = ({ username, title, body, url, label = 'Open Ce
     html: layout(lines, { url, label }),
   };
 };
+
+export const twoFactorCodeEmail = ({ username, code }) => {
+  const lines = [
+    `Hi ${username},`,
+    `Your Central House Marketplace sign-in code is ${code}. It expires in 10 minutes.`,
+    "If you didn't try to sign in, someone may know your password. Please reset it.",
+  ];
+  return {
+    subject: `Your sign-in code: ${code}`,
+    text: lines.join('\n\n'),
+    html: `<div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #334155">
+    <h2 style="color: #334155">Central House Marketplace</h2>
+    ${lines.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}
+    <p style="font-size: 28px; font-weight: bold; letter-spacing: 6px">${escapeHtml(code)}</p>
+  </div>`,
+  };
+};

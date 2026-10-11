@@ -262,3 +262,23 @@ export const updatePreferences = async (req, res, next) => {
     next(error);
   }
 };
+
+// Turns two-step sign-in on or off. Requires the current password, so a
+// borrowed session can't quietly weaken the account.
+export const setTwoFactor = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return next(errorHandler(404, 'User not found!'));
+    if (!bcryptjs.compareSync(req.body.password, user.password)) {
+      return next(errorHandler(401, 'Wrong password!'));
+    }
+    if (req.body.enabled && !user.emailVerified) {
+      return next(errorHandler(400, 'Confirm your email address before turning on two-step sign-in.'));
+    }
+    user.twoFactorEnabled = req.body.enabled;
+    await user.save();
+    res.status(200).json({ twoFactorEnabled: user.twoFactorEnabled });
+  } catch (error) {
+    next(error);
+  }
+};

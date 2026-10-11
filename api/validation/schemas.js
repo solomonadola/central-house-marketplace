@@ -398,3 +398,20 @@ export const updateQuickReplySchema = z
   .object(quickReplyFields)
   .partial()
   .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to update' });
+
+const challengeToken = z.string({ required_error: 'Your sign-in session expired' }).min(1, 'Your sign-in session expired');
+
+export const verifyTwoFactorSchema = z.object({
+  challengeToken,
+  code: z
+    .string({ required_error: 'Enter the 6-digit code' })
+    .trim()
+    .regex(/^\d{6}$/, 'Enter the 6-digit code from the email'),
+});
+
+export const resendTwoFactorSchema = z.object({ challengeToken });
+
+export const setTwoFactorSchema = z.object({
+  enabled: z.boolean({ invalid_type_error: 'Enabled must be true or false', required_error: 'Enabled is required' }),
+  password: z.string({ required_error: 'Enter your password to confirm' }).min(1, 'Enter your password to confirm'),
+});

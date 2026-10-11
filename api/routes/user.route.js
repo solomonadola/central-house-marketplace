@@ -11,6 +11,7 @@ import {
   getPreferences,
   updatePreferences,
   getPublicProfile,
+  setTwoFactor,
 } from '../controllers/user.controller.js';
 import { exportMyAnalytics, getMyAnalytics } from '../controllers/analytics.controller.js';
 import { verifyToken } from '../utils/verifyUser.js';
@@ -18,8 +19,8 @@ import { validateObjectId } from '../utils/validateObjectId.js';
 import { validate } from '../validation/validate.js';
 import { blockUser, getBlockStatus, listBlocked, unblockUser } from '../controllers/block.controller.js';
 import { exportMyData } from '../controllers/dataExport.controller.js';
-import { emailLimiter } from '../utils/rateLimit.js';
-import { updatePreferencesSchema, updateUserSchema } from '../validation/schemas.js';
+import { authLimiter, emailLimiter } from '../utils/rateLimit.js';
+import { setTwoFactorSchema, updatePreferencesSchema, updateUserSchema } from '../validation/schemas.js';
 
 
 const router = express.Router();
@@ -41,6 +42,7 @@ router.get('/blocks', verifyToken, listBlocked)
 router.get('/blocks/:id', verifyToken, getBlockStatus)
 router.put('/blocks/:id', verifyToken, blockUser)
 router.delete('/blocks/:id', verifyToken, unblockUser)
+router.post('/two-factor', verifyToken, authLimiter, validate(setTwoFactorSchema), setTwoFactor)
 router.get('/preferences', verifyToken, getPreferences)
 router.patch('/preferences', verifyToken, validate(updatePreferencesSchema), updatePreferences)
 // Public: a seller's profile and active listings.

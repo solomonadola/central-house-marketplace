@@ -4,6 +4,8 @@ import { verifyToken } from '../utils/verifyUser.js';
 import { authLimiter, emailLimiter } from '../utils/rateLimit.js';
 import {
   forgotPasswordSchema,
+  resendTwoFactorSchema,
+  verifyTwoFactorSchema,
   resetPasswordSchema,
   verifyEmailSchema,
   signinSchema,
@@ -11,6 +13,8 @@ import {
 } from '../validation/schemas.js';
 import {
   forgotPassword,
+  resendTwoFactor,
+  verifyTwoFactor,
   google,
   resendVerification,
   verifyEmail,
@@ -25,6 +29,8 @@ const router = express.Router();
 router.post("/signup", authLimiter, validate(signupSchema), signup);
 router.post("/signin", authLimiter, validate(signinSchema), signin);
 router.post('/google', authLimiter, google);
+router.post('/verify-2fa', authLimiter, validate(verifyTwoFactorSchema), verifyTwoFactor);
+router.post('/resend-2fa', emailLimiter, validate(resendTwoFactorSchema), resendTwoFactor);
 router.get('/signout', signOut)
 router.post('/forgot-password', emailLimiter, validate(forgotPasswordSchema), forgotPassword);
 router.post('/reset-password', authLimiter, validate(resetPasswordSchema), resetPassword);
