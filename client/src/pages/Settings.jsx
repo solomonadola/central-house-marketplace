@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FaBell, FaEnvelopeOpenText } from 'react-icons/fa';
 import BlockedUsers from '../components/BlockedUsers';
+import DownloadMyData from '../components/DownloadMyData';
 import { apiFetch } from '../utils/apiFetch';
 
 const OPTIONS = [
@@ -109,6 +110,7 @@ export default function Settings() {
       )}
 
       <BlockedUsers />
+      <DownloadMyData />
     </main>
   );
 }
