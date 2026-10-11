@@ -1,6 +1,7 @@
 import Listing from '../models/listing.model.js';
 import User from '../models/user.model.js';
 import Review from '../models/review.model.js';
+import Viewing from '../models/viewing.model.js';
 import { errorHandler } from '../utils/error.js';
 import { geocodeAddress } from '../utils/geocode.js';
 
@@ -56,6 +57,7 @@ export const deleteListing = async (req, res, next) => {
     await Listing.findByIdAndDelete(req.params.id);
     await User.updateMany({ favorites: listing._id }, { $pull: { favorites: listing._id } });
     await Review.deleteMany({ listing: listing._id });
+    await Viewing.deleteMany({ listing: listing._id });
     res.status(200).json('Listing has been deleted!');
   } catch (error) {
     next(error);

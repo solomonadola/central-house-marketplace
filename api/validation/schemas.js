@@ -153,3 +153,34 @@ export const updateReportSchema = z.object({
 });
 
 export const moderationReasonSchema = z.object({ reason: moderationReason });
+
+const MAX_VIEWING_DAYS_AHEAD = 90;
+
+const isTimeZone = (tz) => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const createViewingSchema = z.object({
+  listingId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid listing id'),
+  startsAt: z.coerce
+    .date({ errorMap: () => ({ message: 'Please choose a valid date and time' }) })
+    .refine((d) => d > new Date(), 'Please choose a time in the future')
+    .refine(
+      (d) => d < new Date(Date.now() + MAX_VIEWING_DAYS_AHEAD * 24 * 60 * 60 * 1000),
+      `Viewings can be requested up to ${MAX_VIEWING_DAYS_AHEAD} days ahead`
+    ),
+  timeZone: z.string().refine(isTimeZone, 'Invalid time zone').optional().default('UTC'),
+  note: z.string().trim().max(500, 'Note must be at most 500 characters').optional().default(''),
+});
+
+export const updateViewingSchema = z.object({
+  action: z.enum(['accept', 'decline', 'cancel'], {
+    errorMap: () => ({ message: "Action must be 'accept', 'decline' or 'cancel'" }),
+  }),
+  note: z.string().trim().max(500, 'Note must be at most 500 characters').optional().default(''),
+});

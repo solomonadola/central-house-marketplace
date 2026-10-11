@@ -6,6 +6,7 @@ import messageRouter from './routes/message.route.js';
 import reviewRouter from './routes/review.route.js';
 import reportRouter from './routes/report.route.js';
 import adminRouter from './routes/admin.route.js';
+import viewingRouter from './routes/viewing.route.js';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import path from 'path';
@@ -42,6 +43,7 @@ app.use('/api/messages', messageRouter);
 app.use('/api/reviews', reviewRouter);
 app.use('/api/reports', reportRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/viewings', viewingRouter);
 
 // Unknown API routes get a JSON 404 instead of falling through to the
 // client's index.html below.

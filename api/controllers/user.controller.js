@@ -6,6 +6,7 @@ import Conversation from '../models/conversation.model.js';
 import Message from '../models/message.model.js';
 import Review from '../models/review.model.js';
 import Report from '../models/report.model.js';
+import Viewing from '../models/viewing.model.js';
 import { updateListingRating } from '../utils/ratings.js';
 import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
 import { sendVerificationEmail } from '../utils/emailVerification.js';
@@ -73,6 +74,7 @@ export const deleteUser = async (req, res, next) => {
     const reviewedListings = await Review.find({ author: req.params.id }).distinct('listing');
     await Review.deleteMany({ author: req.params.id });
     await Report.deleteMany({ reporter: req.params.id });
+    await Viewing.deleteMany({ $or: [{ requester: req.params.id }, { owner: req.params.id }] });
     await Promise.all(reviewedListings.map(updateListingRating));
     const conversationIds = await Conversation.find({ 'participants.user': req.params.id }).distinct('_id');
     await Message.deleteMany({ conversation: { $in: conversationIds } });
