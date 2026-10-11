@@ -10,6 +10,8 @@ Central House Marketplace is a platform where you can find houses for rent and s
 - See how many times each of your listings has been viewed
 - Rate and review listings you've enquired about, and see ratings on listing cards
 - Report suspicious or inaccurate listings
+- Request viewings of a listing; owners accept or decline, and updates appear in your messages
+- Owner analytics: views per day, saves, enquiries and viewing requests for each listing
 - Admin dashboard: site statistics, a reports queue, hiding listings, and suspending users
 - Create, edit and delete your own listings with up to 6 photos
 - Email/password and Google sign-in, with email confirmation and password reset
@@ -24,6 +26,17 @@ Central House Marketplace is a platform where you can find houses for rent and s
 | Backend  | Node.js, Express, MongoDB + Mongoose, Zod                             |
 | Auth     | JWT in an httpOnly cookie, Firebase Auth for Google sign-in           |
 | Storage  | Firebase Storage for listing and avatar images                        |
+
+## Quick start with Docker
+
+With Docker installed, this runs the app and MongoDB together:
+
+```bash
+JWT_SECRET=$(openssl rand -hex 32) docker compose up --build
+docker compose exec app node api/seed.js   # optional demo data
+```
+
+Then open http://localhost:8080 (set `APP_PORT` to change the port). The other settings in `docker-compose.yml` (`SMTP_URL`, `VITE_FIREBASE_API_KEY`, ...) can be set in your shell or a `.env` file. For local development with hot reload, follow the steps below instead.
 
 ## Getting started
 
@@ -65,7 +78,7 @@ npm install --prefix client
 npm run seed
 ```
 
-This creates 4 demo users (with confirmed emails), 20 listings in San Francisco neighbourhoods, and a few sample conversations and reviews. Sign in with `sarah_homes@demo.centralhouse.local` / `password123`. Re-running the command only replaces the demo data and never touches other accounts.
+This creates 4 demo users (with confirmed emails) and an admin, 20 listings in San Francisco neighbourhoods with 30 days of view history, and sample conversations, reviews and viewing requests. Sign in with `sarah_homes@demo.centralhouse.local` / `password123`. Re-running the command only replaces the demo data and never touches other accounts.
 
 ### Email
 
@@ -102,7 +115,7 @@ npm run build   # installs dependencies and builds the client into client/dist
 npm start       # serves the API and the built client on PORT
 ```
 
-When deploying, set `NODE_ENV=production` so the auth cookie is marked `Secure`, and `TRUST_PROXY=1` if the app runs behind a reverse proxy.
+When deploying, set `NODE_ENV=production` so the auth cookie is marked `Secure` (override with `COOKIE_SECURE=false` if you must serve over plain HTTP), and `TRUST_PROXY=1` if the app runs behind a reverse proxy.
 
 ## Testing
 
@@ -114,7 +127,7 @@ npm run lint --prefix client
 
 The API tests start their own in-memory MongoDB, so they don't need a database or a `.env` file. The first run downloads the MongoDB binary (~100 MB). Use `npm run test:watch` in either folder to re-run tests on change.
 
-CI runs all of the above, plus the client production build, on every pull request and on every push to `master`.
+CI runs all of the above, plus the client production build and a Docker image build, on every pull request and on every push to `master`.
 
 ## Scripts
 
@@ -188,6 +201,10 @@ All responses are JSON. Errors have the shape `{ success: false, statusCode, mes
 | DELETE | `/api/reviews/:id` 🔒       | Delete your review                                |
 | GET    | `/api/reviews/owner/:id`    | A landlord's average rating across their listings |
 | POST   | `/api/reports` 🔒           | Report a listing (`listingId`, `reason`, `details`) |
+| GET    | `/api/viewings` 🔒          | Your viewing requests (`?as=owner` for requests on your listings) |
+| POST   | `/api/viewings` 🔒          | Request a viewing (`listingId`, `startsAt`, `timeZone`, `note`) |
+| PATCH  | `/api/viewings/:id` 🔒      | `accept` / `decline` (owner) or `cancel` (either side), with an optional `note` |
+| GET    | `/api/user/analytics` 🔒    | Views, saves, enquiries and viewing requests for your listings |
 
 Admin routes (🛡 admins only):
 
