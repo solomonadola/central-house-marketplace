@@ -9,6 +9,7 @@ import {
   FaBath,
   FaBed,
   FaChair,
+  FaEye,
   FaMapMarkerAlt,
   FaParking,
   FaShare,
@@ -16,6 +17,7 @@ import {
 import Contact from '../components/Contact';
 import FavoriteButton from '../components/FavoriteButton';
 import { apiFetch } from '../utils/apiFetch';
+import { recordView } from '../utils/recordView';
 
 // https://sabe.io/blog/javascript-format-numbers-commas#:~:text=The%20best%20way%20to%20format,format%20the%20number%20with%20commas.
 
@@ -50,6 +52,12 @@ export default function Listing() {
     };
     fetchListing();
   }, [params.listingId]);
+
+  const isOwner = Boolean(listing && currentUser && listing.userRef === currentUser._id);
+
+  useEffect(() => {
+    if (listing && !isOwner) recordView(listing._id);
+  }, [listing, isOwner]);
 
   return (
     <main>
@@ -104,6 +112,12 @@ export default function Listing() {
               <FaMapMarkerAlt className='text-green-700' />
               {listing.address}
             </p>
+            {isOwner && (
+              <p className='flex items-center gap-2 text-slate-600 text-sm'>
+                <FaEye className='text-slate-500' />
+                {listing.views ?? 0} {listing.views === 1 ? 'view' : 'views'}
+              </p>
+            )}
             <div className='flex gap-4'>
               <p className='bg-red-900 w-full max-w-[200px] text-white text-center p-1 rounded-md'>
                 {listing.type === 'rent' ? 'For Rent' : 'For Sale'}

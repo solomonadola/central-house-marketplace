@@ -271,7 +271,10 @@ export default function Profile() {
                 className='text-slate-700 font-semibold  hover:underline truncate flex-1'
                 to={`/listing/${listing._id}`}
               >
-                <p>{listing.name}</p>
+                <p className='truncate'>{listing.name}</p>
+                <p className='text-xs font-normal text-slate-500'>
+                  {listing.views ?? 0} {listing.views === 1 ? 'view' : 'views'}
+                </p>
               </Link>
 
               <div className='flex flex-col item-center'>
