@@ -20,6 +20,7 @@ import QuickReply from '../models/quickReply.model.js';
 import ListingDraft from '../models/listingDraft.model.js';
 import { updateListingRating } from '../utils/ratings.js';
 import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
+import { getResponseStats } from '../utils/responseStats.js';
 import { sendVerificationEmail } from '../utils/emailVerification.js';
 
 export const test = (req, res) => {
@@ -280,6 +281,17 @@ export const setTwoFactor = async (req, res, next) => {
     user.twoFactorEnabled = req.body.enabled;
     await user.save();
     res.status(200).json({ twoFactorEnabled: user.twoFactorEnabled });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Public: how quickly an owner tends to reply to enquiries.
+export const getOwnerResponseStats = async (req, res, next) => {
+  try {
+    const owner = await User.exists({ _id: req.params.id });
+    if (!owner) return next(errorHandler(404, 'User not found!'));
+    res.status(200).json({ stats: await getResponseStats(req.params.id) });
   } catch (error) {
     next(error);
   }

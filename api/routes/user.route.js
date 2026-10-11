@@ -12,6 +12,7 @@ import {
   updatePreferences,
   getPublicProfile,
   setTwoFactor,
+  getOwnerResponseStats,
 } from '../controllers/user.controller.js';
 import { exportMyAnalytics, getMyAnalytics } from '../controllers/analytics.controller.js';
 import { verifyToken } from '../utils/verifyUser.js';
@@ -47,6 +48,7 @@ router.get('/preferences', verifyToken, getPreferences)
 router.patch('/preferences', verifyToken, validate(updatePreferencesSchema), updatePreferences)
 // Public: a seller's profile and active listings.
 router.get('/public/:id', getPublicProfile)
+router.get('/public/:id/response-stats', getOwnerResponseStats)
 // Must stay last: '/:id' would otherwise match '/favorites'.
 router.get('/:id', verifyToken, getUser)
 
