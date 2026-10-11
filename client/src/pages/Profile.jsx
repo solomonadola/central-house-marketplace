@@ -275,6 +275,11 @@ export default function Profile() {
                 <p className='text-xs font-normal text-slate-500'>
                   {listing.views ?? 0} {listing.views === 1 ? 'view' : 'views'}
                 </p>
+                {listing.hidden && (
+                  <p className='text-xs font-semibold text-amber-700' title={listing.hiddenReason}>
+                    Hidden{listing.hiddenReason ? `: ${listing.hiddenReason}` : ''}
+                  </p>
+                )}
               </Link>
 
               <div className='flex flex-col item-center'>

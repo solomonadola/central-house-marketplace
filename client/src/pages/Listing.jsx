@@ -101,6 +101,13 @@ export default function Listing() {
             </p>
           )}
           <div className='flex flex-col max-w-4xl mx-auto p-3 my-7 gap-4'>
+            {listing.hidden && (
+              <p role='status' className='rounded-lg bg-amber-100 text-amber-900 p-3'>
+                This listing is hidden from the public
+                {listing.hiddenReason ? `: ${listing.hiddenReason}` : '.'}{' '}
+                {isOwner && 'Contact support if you think this is a mistake.'}
+              </p>
+            )}
             <div className='flex items-start justify-between gap-4'>
               <p className='text-2xl font-semibold'>
                 {listing.name} - ${' '}
