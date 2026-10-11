@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { MdLocationOn } from 'react-icons/md';
 import { FaBath, FaBed, FaStar } from 'react-icons/fa';
 import FavoriteButton from './FavoriteButton';
+import CompareButton from './CompareButton';
 
 const FALLBACK_IMAGE =
   'https://53.fs1.hubspotusercontent-na1.net/hub/53/hubfs/Sales_Blog/real-estate-business-compressor.jpg?width=595&height=400&name=real-estate-business-compressor.jpg';
@@ -16,6 +17,7 @@ export default function ListingItem({ listing }) {
   return (
     <article className='group relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card transition-shadow hover:shadow-card-hover'>
       <FavoriteButton listingId={listing._id} className='absolute right-3 top-3 z-10' />
+      <CompareButton listingId={listing._id} className='absolute right-3 top-16 z-10' />
       <Link to={`/listing/${listing._id}`} className='flex flex-1 flex-col'>
         <div className='relative aspect-[4/3] overflow-hidden bg-slate-100'>
           <img
