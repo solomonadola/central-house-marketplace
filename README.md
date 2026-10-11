@@ -42,7 +42,7 @@ Then open http://localhost:8080 (set `APP_PORT` to change the port). The other s
 
 ### Prerequisites
 
-- Node.js 18 or newer
+- Node.js 22 or newer (CI and the Docker image use Node 24 LTS)
 - MongoDB, either local or a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster. With Docker you can run one with:
 
   ```bash

@@ -4,7 +4,7 @@
 # check=skip=SecretsUsedInArgOrEnv
 
 # --- Build the React client ---
-FROM node:20-alpine AS client
+FROM node:24-alpine AS client
 WORKDIR /app/client
 COPY client/package.json client/package-lock.json ./
 RUN npm ci
@@ -15,7 +15,7 @@ ENV VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY
 RUN npm run build
 
 # --- Production image: the API serves the built client ---
-FROM node:20-alpine
+FROM node:24-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./
