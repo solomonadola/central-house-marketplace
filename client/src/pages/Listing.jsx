@@ -36,6 +36,7 @@ import { apiFetch } from '../utils/apiFetch';
 import { recordView } from '../utils/recordView';
 import { recordRecentlyViewed } from '../hooks/useRecentlyViewed';
 import ResponseStats from '../components/ResponseStats';
+import PriceComparison from '../components/PriceComparison';
 import { amenityLabels, propertyTypeLabel } from '../utils/listingDetails';
 
 // https://sabe.io/blog/javascript-format-numbers-commas#:~:text=The%20best%20way%20to%20format,format%20the%20number%20with%20commas.
@@ -239,6 +240,8 @@ export default function Listing() {
                 </p>
               )}
             </div>
+
+            <PriceComparison listingId={listing._id} />
 
             <div className='flex gap-2'>
               <FavoriteButton listingId={listing._id} className='shrink-0 border border-slate-200' />
