@@ -1,9 +1,11 @@
+import mongoose from 'mongoose';
 import User from '../models/user.model.js';
 import Listing from '../models/listing.model.js';
 import Report from '../models/report.model.js';
 import Review from '../models/review.model.js';
 import Conversation from '../models/conversation.model.js';
 import Message from '../models/message.model.js';
+import { errorHandler } from '../utils/error.js';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -42,6 +44,57 @@ export const getStats = async (req, res, next) => {
       messages: { conversations, total: messages },
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+const REPORT_STATUSES = ['open', 'resolved', 'dismissed'];
+
+// The moderation queue. ?status=open (default), resolved, dismissed or all.
+export const listReports = async (req, res, next) => {
+  try {
+    let status = REPORT_STATUSES.includes(req.query.status) ? req.query.status : 'open';
+    if (req.query.status === 'all') status = null;
+    const reports = await Report.find(status ? { status } : {})
+      .sort({ createdAt: status === 'open' ? 1 : -1 })
+      .limit(200)
+      .populate('listing', 'name imageUrls hidden hiddenReason userRef')
+      .populate('reporter', 'username avatar');
+
+    // How many open reports each listing has, to spot the worst offenders.
+    const listingIds = [...new Set(reports.map((r) => r.listing?._id.toString()).filter(Boolean))];
+    const counts = await Report.aggregate([
+      {
+        $match: {
+          status: 'open',
+          listing: { $in: listingIds.map((id) => new mongoose.Types.ObjectId(id)) },
+        },
+      },
+      { $group: { _id: '$listing', count: { $sum: 1 } } },
+    ]);
+    const openByListing = Object.fromEntries(counts.map((c) => [c._id.toString(), c.count]));
+
+    res.status(200).json(
+      reports.map((r) => ({
+        ...r.toObject(),
+        openReportsForListing: r.listing ? openByListing[r.listing._id.toString()] ?? 0 : 0,
+      }))
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateReport = async (req, res, next) => {
+  try {
+    const report = await Report.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
+    if (!report) return next(errorHandler(404, 'Report not found!'));
+    res.status(200).json(report);
+  } catch (error) {
+    // Reopening can clash with another open report from the same user.
+    if (error.code === 11000) {
+      return next(errorHandler(409, 'This user already has an open report for this listing.'));
+    }
     next(error);
   }
 };
