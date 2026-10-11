@@ -11,6 +11,8 @@ export default defineConfig({
       JWT_SECRET: 'test-secret',
       AUTH_RATE_LIMIT: '1000',
       VIEW_RATE_LIMIT: '1000',
+      // Never call the real geocoding service from tests.
+      GEOCODING: 'off',
     },
     // Starting the in-memory MongoDB binary can be slow on first run.
     hookTimeout: 60000,

@@ -1,6 +1,7 @@
 import Listing from '../models/listing.model.js';
 import User from '../models/user.model.js';
 import { errorHandler } from '../utils/error.js';
+import { geocodeAddress } from '../utils/geocode.js';
 
 // Fields a client may set. Ownership (userRef) is always taken from the
 // auth token so users can't create or transfer listings as someone else.
@@ -26,8 +27,11 @@ const pickEditable = (body) =>
 
 export const createListing = async (req, res, next) => {
   try {
+    const fields = pickEditable(req.body);
+    const location = await geocodeAddress(fields.address);
     const listing = await Listing.create({
-      ...pickEditable(req.body),
+      ...fields,
+      ...(location && { location }),
       userRef: req.user.id,
     });
     return res.status(201).json(listing);
@@ -66,11 +70,19 @@ export const updateListing = async (req, res, next) => {
       return next(errorHandler(401, 'You can only update your own listings!'));
     }
 
-    const updatedListing = await Listing.findByIdAndUpdate(
-      req.params.id,
-      pickEditable(req.body),
-      { new: true, runValidators: true }
-    );
+    const update = { $set: pickEditable(req.body) };
+    // Re-geocode only when the address changes. If the new address can't
+    // be found, drop the old coordinates rather than keep a wrong pin.
+    if (update.$set.address !== undefined && update.$set.address !== listing.address) {
+      const location = await geocodeAddress(update.$set.address);
+      if (location) update.$set.location = location;
+      else update.$unset = { location: 1 };
+    }
+
+    const updatedListing = await Listing.findByIdAndUpdate(req.params.id, update, {
+      new: true,
+      runValidators: true,
+    });
     res.status(200).json(updatedListing);
   } catch (error) {
     next(error);

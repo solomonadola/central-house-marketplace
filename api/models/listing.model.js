@@ -54,6 +54,17 @@ const listingSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    // Set by geocoding the address; missing if it couldn't be found.
+    location: {
+      type: new mongoose.Schema(
+        {
+          lat: { type: Number, required: true, min: -90, max: 90 },
+          lng: { type: Number, required: true, min: -180, max: 180 },
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
     views: {
       type: Number,
       default: 0,
