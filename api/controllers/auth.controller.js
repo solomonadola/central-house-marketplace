@@ -3,6 +3,7 @@ import bcryptjs from 'bcryptjs';
 import { errorHandler } from '../utils/error.js';
 import { setAuthCookie, clearAuthCookie } from '../utils/authCookie.js';
 import { verifyFirebaseIdToken } from '../utils/firebase.js';
+import { suspendedError } from '../utils/verifyUser.js';
 import { createToken, hashToken } from '../utils/tokens.js';
 import { appUrl, sendMail } from '../utils/mailer.js';
 import { passwordResetEmail } from '../utils/emails.js';
@@ -24,12 +25,13 @@ export const signup = async (req, res, next) => {
 export const signin = async (req, res, next) => {
   const { email, password } = req.body;
   try {
-    const validUser = await User.findOne({ email });
+    const validUser = await User.findOne({ email }).select('+tokenVersion');
     if (!validUser) return next(errorHandler(404, 'User not found!'));
     const validPassword = bcryptjs.compareSync(password, validUser.password);
     if (!validPassword) return next(errorHandler(401, 'Wrong credentials!'));
+    if (validUser.suspended) return next(suspendedError());
     const { password: pass, ...rest } = validUser._doc;
-    setAuthCookie(res, validUser._id)
+    setAuthCookie(res, validUser)
       .status(200)
       .json(rest);
   } catch (error) {
@@ -59,14 +61,17 @@ export const google = async (req, res, next) => {
   const photo = decoded.picture;
 
   try {
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email }).select('+tokenVersion');
     if (user) {
       // Google has verified this address.
       if (!user.emailVerified) {
-        user = await User.findByIdAndUpdate(user._id, { emailVerified: true }, { new: true });
+        user = await User.findByIdAndUpdate(user._id, { emailVerified: true }, { new: true }).select(
+          '+tokenVersion'
+        );
       }
+      if (user.suspended) return next(suspendedError());
       const { password: pass, ...rest } = user._doc;
-      setAuthCookie(res, user._id)
+      setAuthCookie(res, user)
         .status(200)
         .json(rest);
     } else {
@@ -85,7 +90,7 @@ export const google = async (req, res, next) => {
       });
       await newUser.save();
       const { password: pass, ...rest } = newUser._doc;
-      setAuthCookie(res, newUser._id)
+      setAuthCookie(res, newUser)
         .status(200)
         .json(rest);
     }
@@ -136,6 +141,9 @@ export const resetPassword = async (req, res, next) => {
       { passwordResetTokenHash: hashToken(token), passwordResetExpires: { $gt: new Date() } },
       {
         password: bcryptjs.hashSync(password, 10),
+        // Sign out every existing session: whoever asked for the reset may
+        // be locking out someone who had access to the account.
+        $inc: { tokenVersion: 1 },
         // Single use: clear the token once it's been used.
         $unset: { passwordResetTokenHash: 1, passwordResetExpires: 1 },
       }
