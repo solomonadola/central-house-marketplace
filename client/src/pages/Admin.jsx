@@ -3,12 +3,14 @@ import AdminOverview from '../components/admin/AdminOverview';
 import AdminReports from '../components/admin/AdminReports';
 import AdminUsers from '../components/admin/AdminUsers';
 import AdminHiddenListings from '../components/admin/AdminHiddenListings';
+import AdminAuditLog from '../components/admin/AdminAuditLog';
 
 const TABS = [
   ['overview', 'Overview', AdminOverview],
   ['reports', 'Reports', AdminReports],
   ['users', 'Users', AdminUsers],
   ['hidden', 'Hidden listings', AdminHiddenListings],
+  ['audit', 'Audit log', AdminAuditLog],
 ];
 
 export default function Admin() {

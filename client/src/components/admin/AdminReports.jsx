@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { FaDownload } from 'react-icons/fa';
 import { useFetchJson } from '../../hooks/useFetchJson';
 import { apiFetch } from '../../utils/apiFetch';
+import { downloadCsv } from '../../utils/downloadCsv';
 import { formatShortTime } from '../../utils/formatTime';
 import ReasonForm from './ReasonForm';
 
@@ -99,18 +101,33 @@ function ReportCard({ report, onChanged }) {
 export default function AdminReports() {
   const [status, setStatus] = useState('open');
   const { data, error, loading, reload } = useFetchJson(`/api/admin/reports?status=${status}`);
+  const [exporting, setExporting] = useState(false);
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      await downloadCsv(`/api/admin/reports/export?status=${status}`, 'reports.csv');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className='flex flex-col gap-3'>
-      <label className='flex items-center gap-2 text-sm'>
-        Show
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className='border rounded-lg p-2'>
-          <option value='open'>Open reports</option>
-          <option value='resolved'>Resolved</option>
-          <option value='dismissed'>Dismissed</option>
-          <option value='all'>All</option>
-        </select>
-      </label>
+      <div className='flex flex-wrap items-center gap-3'>
+        <label className='flex items-center gap-2 text-sm'>
+          Show
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className='border rounded-lg p-2'>
+            <option value='open'>Open reports</option>
+            <option value='resolved'>Resolved</option>
+            <option value='dismissed'>Dismissed</option>
+            <option value='all'>All</option>
+          </select>
+        </label>
+        <button type='button' onClick={exportCsv} disabled={exporting} className='btn-secondary text-sm'>
+          <FaDownload className='h-3 w-3' aria-hidden='true' /> {exporting ? 'Exporting...' : 'Export CSV'}
+        </button>
+      </div>
       {loading && !data && <p className='text-slate-600'>Loading...</p>}
       {error && <p className='text-red-700'>{error}</p>}
       {data && data.length === 0 && (
