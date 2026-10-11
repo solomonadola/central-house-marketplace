@@ -8,10 +8,12 @@ import {
 } from '../redux/user/userSlice';
 import OAuth from '../components/OAuth';
 import AuthLayout, { Divider } from '../components/AuthLayout';
+import TwoFactorStep from '../components/TwoFactorStep';
 import { apiFetch } from '../utils/apiFetch';
 
 export default function SignIn() {
   const [formData, setFormData] = useState({});
+  const [challenge, setChallenge] = useState(null);
   const { loading, error } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const notice = useLocation().state?.notice;
@@ -38,6 +40,12 @@ export default function SignIn() {
         dispatch(signInFailure(data.message));
         return;
       }
+      if (data.twoFactorRequired) {
+        // Clears the loading state; the code step takes it from here.
+        dispatch(signInFailure(null));
+        setChallenge(data);
+        return;
+      }
       dispatch(signInSuccess(data));
       navigate('/');
     } catch (error) {
@@ -47,6 +55,16 @@ export default function SignIn() {
   return (
     <AuthLayout title='Welcome back' subtitle='Sign in to message owners, save homes and book viewings.'>
       {notice && <p className='mb-6 rounded-lg bg-green-50 p-3 text-sm text-green-800'>{notice}</p>}
+      {challenge ? (
+        <TwoFactorStep
+          challenge={challenge}
+          onSignedIn={(user) => {
+            dispatch(signInSuccess(user));
+            navigate('/');
+          }}
+          onCancel={() => setChallenge(null)}
+        />
+      ) : (
       <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
         <div>
           <label htmlFor='email' className='label'>
@@ -83,6 +101,7 @@ export default function SignIn() {
         <Divider />
         <OAuth />
       </form>
+      )}
       <p className='mt-6 text-center text-sm text-slate-600'>
         Don&apos;t have an account?{' '}
         <Link to='/sign-up' className='font-semibold text-brand-700 hover:text-brand-800'>
