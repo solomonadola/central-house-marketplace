@@ -34,13 +34,17 @@ describe('GET /api/user/analytics', () => {
     const res = await (await signedInAgent(owner)).get('/api/user/analytics');
 
     expect(res.status).toBe(200);
-    expect(res.body.totals).toEqual({
+    expect(res.body.totals).toMatchObject({
       listings: 2,
       views: 43,
       viewsLast30Days: 9,
       saves: 3,
       enquiries: 1,
       viewingRequests: 1,
+      applications: 0,
+      approvedApplications: 0,
+      depositsPaid: 0,
+      depositsPaidAmount: 0,
     });
     expect(res.body.listings[0]).toMatchObject({
       name: 'Popular Listing Here',
