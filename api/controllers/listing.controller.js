@@ -139,7 +139,7 @@ export const getListings = async (req, res, next) => {
     const minBedrooms = optionalNumber(query.minBedrooms);
     const minBathrooms = optionalNumber(query.minBathrooms);
 
-    const listings = await Listing.find({
+    const filter = {
       name: { $regex: escapeRegex(searchTerm), $options: 'i' },
       offer: booleanFilter(query.offer),
       furnished: booleanFilter(query.furnished),
@@ -148,11 +148,15 @@ export const getListings = async (req, res, next) => {
       ...(minBedrooms !== undefined && { bedrooms: { $gte: minBedrooms } }),
       ...(minBathrooms !== undefined && { bathrooms: { $gte: minBathrooms } }),
       ...priceFilter(optionalNumber(query.minPrice), optionalNumber(query.maxPrice)),
-    })
-      .sort({ [sort]: order })
-      .limit(limit)
-      .skip(startIndex);
+    };
 
+    const [listings, total] = await Promise.all([
+      Listing.find(filter).sort({ [sort]: order }).limit(limit).skip(startIndex),
+      Listing.countDocuments(filter),
+    ]);
+
+    // The body stays a plain array; the total is for pagination UIs.
+    res.set('X-Total-Count', String(total));
     return res.status(200).json(listings);
   } catch (error) {
     next(error);

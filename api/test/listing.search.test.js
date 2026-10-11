@@ -61,6 +61,13 @@ describe('GET /api/listing/get', () => {
     expect(desc.map((l) => l.regularPrice)).toEqual([900000, 300000, 1500, 500]);
   });
 
+  it('reports the total number of matches in X-Total-Count', async () => {
+    const res = await api().get('/api/listing/get').query({ type: 'rent', limit: 1 });
+
+    expect(res.body).toHaveLength(1);
+    expect(res.headers['x-total-count']).toBe('2');
+  });
+
   it('paginates with limit and startIndex', async () => {
     const page1 = await search({ limit: 2 });
     const page2 = await search({ limit: 2, startIndex: 2 });
