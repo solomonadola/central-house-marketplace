@@ -12,6 +12,7 @@ describe('ListingItem', () => {
     expect(screen.getByText('Bright Two-Bedroom Apartment')).toBeInTheDocument();
     expect(screen.getByText('1 Test Street')).toBeInTheDocument();
     expect(screen.getByRole('link')).toHaveAttribute('href', '/listing/listing1');
+    expect(screen.getByRole('button', { name: 'Save listing' })).toBeInTheDocument();
     expect(screen.getByAltText('listing cover')).toHaveAttribute('src', 'https://example.com/photo.jpg');
   });
 

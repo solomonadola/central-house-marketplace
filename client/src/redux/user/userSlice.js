@@ -58,6 +58,9 @@ const userSlice = createSlice({
       state.error = action.payload;
       state.loading = false;
     },
+    setFavorites: (state, action) => {
+      if (state.currentUser) state.currentUser.favorites = action.payload;
+    },
   },
 });
 
@@ -74,6 +77,7 @@ export const {
   signOutUserFailure,
   signOutUserSuccess,
   signOutUserStart,
+  setFavorites,
 } = userSlice.actions;
 
 export default userSlice.reducer;

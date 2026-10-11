@@ -61,6 +61,13 @@ describe('GET /api/listing/get', () => {
     expect(desc.map((l) => l.regularPrice)).toEqual([900000, 300000, 1500, 500]);
   });
 
+  it('reports the total number of matches in X-Total-Count', async () => {
+    const res = await api().get('/api/listing/get').query({ type: 'rent', limit: 1 });
+
+    expect(res.body).toHaveLength(1);
+    expect(res.headers['x-total-count']).toBe('2');
+  });
+
   it('paginates with limit and startIndex', async () => {
     const page1 = await search({ limit: 2 });
     const page2 = await search({ limit: 2, startIndex: 2 });
@@ -68,6 +75,44 @@ describe('GET /api/listing/get', () => {
     expect(page1).toHaveLength(2);
     expect(page2).toHaveLength(2);
     expect(names([...page1, ...page2])).toEqual(names(await search({})));
+  });
+
+  describe('price and room filters', () => {
+    it('filters by price range', async () => {
+      expect(names(await search({ minPrice: 1000, maxPrice: 400000 }))).toEqual([
+        'Family House For Sale',
+        'Furnished Rental Flat',
+      ]);
+      expect(names(await search({ maxPrice: 1000 }))).toEqual(['Cheap Rental Studio']);
+      expect(names(await search({ minPrice: 500000 }))).toEqual(['Luxury Villa For Sale']);
+    });
+
+    it('uses the discount price for listings with an offer', async () => {
+      // Regular 300,000, discounted to 280,000.
+      expect(names(await search({ maxPrice: 290000, type: 'sale' }))).toEqual(['Family House For Sale']);
+      expect(await search({ minPrice: 290000, maxPrice: 310000 })).toHaveLength(0);
+    });
+
+    it('filters by minimum bedrooms and bathrooms', async () => {
+      const user = await createUser();
+      await createListing(user, { name: 'Big Family Home Here', bedrooms: 5, bathrooms: 3 });
+
+      expect(names(await search({ minBedrooms: 4 }))).toEqual(['Big Family Home Here']);
+      expect(names(await search({ minBathrooms: 3 }))).toEqual(['Big Family Home Here']);
+      expect(await search({ minBedrooms: 2 })).toHaveLength(5);
+    });
+
+    it('combines with other filters', async () => {
+      expect(names(await search({ type: 'rent', minPrice: 1000 }))).toEqual(['Furnished Rental Flat']);
+    });
+
+    it.each([['abc'], ['-100'], [''], ['Infinity']])('ignores an invalid value (%s)', async (value) => {
+      expect(await search({ minPrice: value, maxPrice: value, minBedrooms: value })).toHaveLength(4);
+    });
+
+    it('ignores operator objects', async () => {
+      expect(await search({ 'minPrice[$gt]': '0', 'minBedrooms[$ne]': '1' })).toHaveLength(4);
+    });
   });
 
   describe('untrusted input', () => {

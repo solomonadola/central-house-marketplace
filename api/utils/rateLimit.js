@@ -17,3 +17,17 @@ export const authLimiter = rateLimit({
       message: 'Too many attempts, please try again in 15 minutes.',
     }),
 });
+
+// Caps how fast one IP can bump view counts, so a script can't inflate them.
+export const viewLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: Number(process.env.VIEW_RATE_LIMIT) || 60,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: (req, res, next, options) =>
+    res.status(options.statusCode).json({
+      success: false,
+      statusCode: options.statusCode,
+      message: 'Too many requests, please try again later.',
+    }),
+});

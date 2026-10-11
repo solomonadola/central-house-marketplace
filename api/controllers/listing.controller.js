@@ -1,5 +1,7 @@
 import Listing from '../models/listing.model.js';
+import User from '../models/user.model.js';
 import { errorHandler } from '../utils/error.js';
+import { geocodeAddress } from '../utils/geocode.js';
 
 // Fields a client may set. Ownership (userRef) is always taken from the
 // auth token so users can't create or transfer listings as someone else.
@@ -25,8 +27,11 @@ const pickEditable = (body) =>
 
 export const createListing = async (req, res, next) => {
   try {
+    const fields = pickEditable(req.body);
+    const location = await geocodeAddress(fields.address);
     const listing = await Listing.create({
-      ...pickEditable(req.body),
+      ...fields,
+      ...(location && { location }),
       userRef: req.user.id,
     });
     return res.status(201).json(listing);
@@ -48,6 +53,7 @@ export const deleteListing = async (req, res, next) => {
     }
 
     await Listing.findByIdAndDelete(req.params.id);
+    await User.updateMany({ favorites: listing._id }, { $pull: { favorites: listing._id } });
     res.status(200).json('Listing has been deleted!');
   } catch (error) {
     next(error);
@@ -64,12 +70,34 @@ export const updateListing = async (req, res, next) => {
       return next(errorHandler(401, 'You can only update your own listings!'));
     }
 
-    const updatedListing = await Listing.findByIdAndUpdate(
-      req.params.id,
-      pickEditable(req.body),
-      { new: true, runValidators: true }
-    );
+    const update = { $set: pickEditable(req.body) };
+    // Re-geocode only when the address changes. If the new address can't
+    // be found, drop the old coordinates rather than keep a wrong pin.
+    if (update.$set.address !== undefined && update.$set.address !== listing.address) {
+      const location = await geocodeAddress(update.$set.address);
+      if (location) update.$set.location = location;
+      else update.$unset = { location: 1 };
+    }
+
+    const updatedListing = await Listing.findByIdAndUpdate(req.params.id, update, {
+      new: true,
+      runValidators: true,
+    });
     res.status(200).json(updatedListing);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const recordView = async (req, res, next) => {
+  try {
+    const listing = await Listing.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true, projection: { views: 1 } }
+    );
+    if (!listing) return next(errorHandler(404, 'Listing not found!'));
+    res.status(200).json({ views: listing.views });
   } catch (error) {
     next(error);
   }
@@ -103,6 +131,23 @@ const toInt = (value, fallback, min, max) => {
   return Math.min(Math.max(n, min), max);
 };
 
+// Optional numeric filter: undefined unless the value is a non-negative number.
+const optionalNumber = (value) => {
+  if (typeof value !== 'string' || value.trim() === '') return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
+};
+
+// The price a buyer actually pays: the discount price when there's an offer.
+const EFFECTIVE_PRICE = { $cond: ['$offer', '$discountPrice', '$regularPrice'] };
+
+const priceFilter = (min, max) => {
+  const conditions = [];
+  if (min !== undefined) conditions.push({ $gte: [EFFECTIVE_PRICE, min] });
+  if (max !== undefined) conditions.push({ $lte: [EFFECTIVE_PRICE, max] });
+  return conditions.length ? { $expr: { $and: conditions } } : {};
+};
+
 export const getListings = async (req, res, next) => {
   try {
     const { query } = req;
@@ -117,17 +162,27 @@ export const getListings = async (req, res, next) => {
     const sort = SORT_FIELDS.includes(query.sort) ? query.sort : 'createdAt';
     const order = query.order === 'asc' ? 'asc' : 'desc';
 
-    const listings = await Listing.find({
+    const minBedrooms = optionalNumber(query.minBedrooms);
+    const minBathrooms = optionalNumber(query.minBathrooms);
+
+    const filter = {
       name: { $regex: escapeRegex(searchTerm), $options: 'i' },
       offer: booleanFilter(query.offer),
       furnished: booleanFilter(query.furnished),
       parking: booleanFilter(query.parking),
       type,
-    })
-      .sort({ [sort]: order })
-      .limit(limit)
-      .skip(startIndex);
+      ...(minBedrooms !== undefined && { bedrooms: { $gte: minBedrooms } }),
+      ...(minBathrooms !== undefined && { bathrooms: { $gte: minBathrooms } }),
+      ...priceFilter(optionalNumber(query.minPrice), optionalNumber(query.maxPrice)),
+    };
 
+    const [listings, total] = await Promise.all([
+      Listing.find(filter).sort({ [sort]: order }).limit(limit).skip(startIndex),
+      Listing.countDocuments(filter),
+    ]);
+
+    // The body stays a plain array; the total is for pagination UIs.
+    res.set('X-Total-Count', String(total));
     return res.status(200).json(listings);
   } catch (error) {
     next(error);

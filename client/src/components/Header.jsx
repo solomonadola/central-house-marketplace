@@ -1,4 +1,4 @@
-import { FaSearch } from 'react-icons/fa';
+import { FaHeart, FaSearch } from 'react-icons/fa';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
@@ -58,6 +58,16 @@ export default function Header() {
               About
             </li>
           </Link>
+          {currentUser && (
+            <Link to='/saved' aria-label='Saved listings' className='relative flex items-center'>
+              <FaHeart className='text-slate-700 h-5 w-5' />
+              {currentUser.favorites?.length > 0 && (
+                <span className='absolute -top-2 -right-3 rounded-full bg-red-600 text-white text-[10px] font-semibold min-w-[18px] h-[18px] px-1 flex items-center justify-center'>
+                  {currentUser.favorites.length}
+                </span>
+              )}
+            </Link>
+          )}
           <Link to='/profile'>
             {currentUser ? (
               <img

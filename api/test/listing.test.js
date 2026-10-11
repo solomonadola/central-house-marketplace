@@ -1,6 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api, createListing, createUser, signedInAgent, validListing } from './helpers.js';
 import Listing from '../models/listing.model.js';
+import { geocodeAddress } from '../utils/geocode.js';
+
+vi.mock('../utils/geocode.js', () => ({ geocodeAddress: vi.fn() }));
+
+beforeEach(() => {
+  vi.mocked(geocodeAddress).mockReset().mockResolvedValue(null);
+});
 
 describe('POST /api/listing/create', () => {
   it('creates a listing owned by the signed-in user', async () => {
@@ -185,5 +192,103 @@ describe('malformed ids', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe('Invalid id!');
+  });
+});
+
+describe('POST /api/listing/view/:id', () => {
+  it('counts a view without auth', async () => {
+    const listing = await createListing(await createUser());
+
+    await api().post(`/api/listing/view/${listing._id}`).expect(200);
+    const res = await api().post(`/api/listing/view/${listing._id}`).expect(200);
+
+    expect(res.body).toEqual({ views: 2 });
+    expect((await Listing.findById(listing._id)).views).toBe(2);
+  });
+
+  it('starts new listings at zero views', async () => {
+    const agent = await signedInAgent(await createUser());
+    const res = await agent.post('/api/listing/create').send(validListing());
+    expect(res.body.views).toBe(0);
+  });
+
+  it('does not let owners set the view count', async () => {
+    const user = await createUser();
+    const agent = await signedInAgent(user);
+
+    const created = await agent.post('/api/listing/create').send(validListing({ views: 9999 }));
+    const updated = await agent.post(`/api/listing/update/${created.body._id}`).send({ views: 9999 });
+
+    expect(created.body.views).toBe(0);
+    expect(updated.body.views).toBe(0);
+  });
+
+  it('returns 404 for a missing listing and 400 for a malformed id', async () => {
+    expect((await api().post('/api/listing/view/0123456789abcdef01234567')).status).toBe(404);
+    expect((await api().post('/api/listing/view/abc')).status).toBe(400);
+  });
+});
+
+describe('listing location', () => {
+  it('geocodes the address on create', async () => {
+    vi.mocked(geocodeAddress).mockResolvedValue({ lat: 40.7, lng: -74 });
+    const agent = await signedInAgent(await createUser());
+
+    const res = await agent.post('/api/listing/create').send(validListing({ address: '1 Main St, New York' }));
+
+    expect(geocodeAddress).toHaveBeenCalledWith('1 Main St, New York');
+    expect(res.body.location).toEqual({ lat: 40.7, lng: -74 });
+  });
+
+  it('still creates the listing when geocoding finds nothing', async () => {
+    const agent = await signedInAgent(await createUser());
+
+    const res = await agent.post('/api/listing/create').send(validListing());
+
+    expect(res.status).toBe(201);
+    expect(res.body).not.toHaveProperty('location');
+  });
+
+  it('re-geocodes when the address changes', async () => {
+    const user = await createUser();
+    const listing = await createListing(user, { location: { lat: 1, lng: 1 } });
+    vi.mocked(geocodeAddress).mockResolvedValue({ lat: 2, lng: 2 });
+    const agent = await signedInAgent(user);
+
+    const res = await agent.post(`/api/listing/update/${listing._id}`).send({ address: '2 New Road, Boston' });
+
+    expect(geocodeAddress).toHaveBeenCalledWith('2 New Road, Boston');
+    expect(res.body.location).toEqual({ lat: 2, lng: 2 });
+  });
+
+  it('drops the old location if the new address cannot be found', async () => {
+    const user = await createUser();
+    const listing = await createListing(user, { location: { lat: 1, lng: 1 } });
+    const agent = await signedInAgent(user);
+
+    const res = await agent.post(`/api/listing/update/${listing._id}`).send({ address: 'Unknown Place' });
+
+    expect(res.body).not.toHaveProperty('location');
+  });
+
+  it('does not geocode when the address is unchanged', async () => {
+    const user = await createUser();
+    const listing = await createListing(user, { location: { lat: 1, lng: 1 } });
+    const agent = await signedInAgent(user);
+
+    const res = await agent
+      .post(`/api/listing/update/${listing._id}`)
+      .send({ address: listing.address, name: 'Updated Listing Name' });
+
+    expect(geocodeAddress).not.toHaveBeenCalled();
+    expect(res.body.location).toEqual({ lat: 1, lng: 1 });
+  });
+
+  it('ignores a location sent by the client', async () => {
+    const agent = await signedInAgent(await createUser());
+
+    const res = await agent.post('/api/listing/create').send(validListing({ location: { lat: 5, lng: 5 } }));
+
+    expect(res.body).not.toHaveProperty('location');
   });
 });

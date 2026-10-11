@@ -32,6 +32,18 @@ describe('Header', () => {
     expect(screen.getByAltText('profile')).toHaveAttribute('src', 'https://example.com/me.png');
   });
 
+  it('links to saved listings with a count when signed in', () => {
+    renderHeader({ currentUser: { _id: 'u1', favorites: ['a', 'b'] } });
+    const link = screen.getByRole('link', { name: /saved listings/i });
+    expect(link).toHaveAttribute('href', '/saved');
+    expect(link).toHaveTextContent('2');
+  });
+
+  it('hides the saved link when signed out', () => {
+    renderHeader();
+    expect(screen.queryByRole('link', { name: /saved listings/i })).not.toBeInTheDocument();
+  });
+
   it('fills the search box from the URL', () => {
     renderHeader({ route: '/search?searchTerm=villa' });
     expect(screen.getByPlaceholderText(/search/i)).toHaveValue('villa');

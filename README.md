@@ -4,7 +4,10 @@ Central House Marketplace is a platform where you can find houses for rent and s
 
 ## Features
 
-- Browse, search and filter listings by type (rent/sale), offers, parking and furnishing, sorted by price or date
+- Browse, search and filter listings by type (rent/sale), price range, bedrooms, bathrooms, offers, parking and furnishing, sorted by price or date
+- See search results and individual listings on a map (addresses are geocoded with OpenStreetMap)
+- Save listings to favorites and find them on the Saved page
+- See how many times each of your listings has been viewed
 - Create, edit and delete your own listings with up to 6 photos
 - Email/password and Google sign-in
 - Contact a listing's owner directly from the listing page
@@ -14,7 +17,7 @@ Central House Marketplace is a platform where you can find houses for rent and s
 
 | Layer    | Tools                                                                 |
 | -------- | --------------------------------------------------------------------- |
-| Frontend | React 18, Vite, Redux Toolkit + redux-persist, React Router, Tailwind CSS, Swiper |
+| Frontend | React 18, Vite, Redux Toolkit + redux-persist, React Router, Tailwind CSS, Swiper, Leaflet |
 | Backend  | Node.js, Express, MongoDB + Mongoose, Zod                             |
 | Auth     | JWT in an httpOnly cookie, Firebase Auth for Google sign-in           |
 | Storage  | Firebase Storage for listing and avatar images                        |
@@ -59,7 +62,7 @@ npm install --prefix client
 npm run seed
 ```
 
-This creates 4 demo users and 20 listings. Sign in with `sarah_homes@demo.centralhouse.local` / `password123`. Re-running the command only replaces the demo data and never touches other accounts.
+This creates 4 demo users and 20 listings in San Francisco neighbourhoods. Sign in with `sarah_homes@demo.centralhouse.local` / `password123`. Re-running the command only replaces the demo data and never touches other accounts.
 
 ### 4. Run the app
 
@@ -139,6 +142,9 @@ All responses are JSON. Errors have the shape `{ success: false, statusCode, mes
 | POST   | `/api/auth/signin`          | Sign in with email and password                   |
 | POST   | `/api/auth/google`          | Sign in with a Firebase Google ID token (`idToken`) |
 | GET    | `/api/auth/signout`         | Clear the auth cookie                             |
+| GET    | `/api/user/favorites` 🔒    | List your saved listings                          |
+| PUT    | `/api/user/favorites/:id` 🔒 | Save a listing                                   |
+| DELETE | `/api/user/favorites/:id` 🔒 | Remove a saved listing                           |
 | POST   | `/api/user/update/:id` 🔒   | Update your username, email, password or avatar   |
 | DELETE | `/api/user/delete/:id` 🔒   | Delete your account and its listings              |
 | GET    | `/api/user/listings/:id` 🔒 | List your own listings                            |
@@ -148,8 +154,9 @@ All responses are JSON. Errors have the shape `{ success: false, statusCode, mes
 | DELETE | `/api/listing/delete/:id` 🔒 | Delete your listing                              |
 | GET    | `/api/listing/get/:id`      | Get one listing                                   |
 | GET    | `/api/listing/get`          | Search listings (see below)                       |
+| POST   | `/api/listing/view/:id`     | Count a view of a listing (rate-limited)          |
 
-Search query parameters: `searchTerm`, `type` (`rent` / `sale` / `all`), `offer`, `parking`, `furnished` (`true` to require), `sort` (`createdAt` / `regularPrice`), `order` (`asc` / `desc`), `limit` (1-50, default 9), `startIndex`.
+Search query parameters: `searchTerm`, `type` (`rent` / `sale` / `all`), `offer`, `parking`, `furnished` (`true` to require), `minPrice` / `maxPrice` (compared against the discounted price for offers), `minBedrooms`, `minBathrooms`, `sort` (`createdAt` / `regularPrice`), `order` (`asc` / `desc`), `limit` (1-50, default 9), `startIndex`. The response body is an array of listings; the `X-Total-Count` header gives the total number of matches.
 
 ### Security
 
