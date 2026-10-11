@@ -67,7 +67,7 @@ export default function RequestViewing({ listingId }) {
       <button
         type='button'
         onClick={() => setOpen(true)}
-        className='flex items-center justify-center gap-2 border border-slate-700 text-slate-700 rounded-lg uppercase p-3 hover:bg-slate-50'
+        className='btn-secondary'
       >
         <FaCalendarAlt aria-hidden='true' /> Request a viewing
       </button>
@@ -75,8 +75,8 @@ export default function RequestViewing({ listingId }) {
   }
 
   return (
-    <form onSubmit={submit} className='flex flex-col gap-2 border rounded-lg p-3'>
-      <label htmlFor='viewing-time' className='font-semibold text-slate-700'>
+    <form onSubmit={submit} className='flex flex-col gap-2 rounded-lg bg-slate-50 p-3'>
+      <label htmlFor='viewing-time' className='label'>
         When would you like to view it?
       </label>
       <input
@@ -85,7 +85,7 @@ export default function RequestViewing({ listingId }) {
         value={startsAt}
         min={toLocalInputValue(new Date())}
         onChange={(e) => setStartsAt(e.target.value)}
-        className='border rounded-lg p-2'
+        className='input'
       />
       <textarea
         value={note}
@@ -94,18 +94,18 @@ export default function RequestViewing({ listingId }) {
         rows={2}
         placeholder='Anything the owner should know? (optional)'
         aria-label='Note for the owner'
-        className='border rounded-lg p-2'
+        className='input'
       />
       {error && <p className='text-sm text-red-700'>{error}</p>}
       <div className='flex gap-3'>
         <button
           type='submit'
           disabled={sending}
-          className='bg-slate-700 text-white px-4 py-2 rounded-lg uppercase disabled:opacity-60'
+          className='btn-primary'
         >
           {sending ? 'Sending...' : 'Send request'}
         </button>
-        <button type='button' onClick={() => setOpen(false)} className='text-slate-600 hover:underline'>
+        <button type='button' onClick={() => setOpen(false)} className='btn-ghost'>
           Cancel
         </button>
       </div>

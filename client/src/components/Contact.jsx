@@ -52,26 +52,24 @@ export default function Contact({ listing }) {
     <>
       {landlord && (
         <form onSubmit={handleSubmit} className='flex flex-col gap-2'>
-          <label htmlFor='message'>
-            Contact <span className='font-semibold'>{landlord.username}</span>{' '}
-            for{' '}
-            <span className='font-semibold'>{listing.name.toLowerCase()}</span>
+          <label htmlFor='message' className='text-sm text-slate-700'>
+            Contact <span className='font-semibold'>{landlord.username}</span> about this home
           </label>
           <textarea
             name='message'
             id='message'
-            rows='2'
+            rows='4'
             maxLength={2000}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder='Enter your message here...'
-            className='w-full border p-3 rounded-lg'
+            placeholder={`Hi ${landlord.username}, is this still available?`}
+            className='input'
           ></textarea>
           {error && <p className='text-sm text-red-700'>{error}</p>}
           <button
             type='submit'
             disabled={sending || !message.trim()}
-            className='bg-slate-700 text-white text-center p-3 uppercase rounded-lg hover:opacity-95 disabled:opacity-60'
+            className='btn-primary'
           >
             {sending ? 'Sending...' : 'Send Message'}
           </button>

@@ -38,7 +38,7 @@ function ReviewForm({ listingId, ownReview, onSaved }) {
   };
 
   return (
-    <form onSubmit={save} className='flex flex-col gap-2 border rounded-lg p-3'>
+    <form onSubmit={save} className='card flex flex-col gap-3 p-4'>
       <p className='font-semibold text-slate-700'>{ownReview ? 'Edit your review' : 'Write a review'}</p>
       <StarInput value={rating} onChange={setRating} disabled={saving} />
       <textarea
@@ -48,13 +48,13 @@ function ReviewForm({ listingId, ownReview, onSaved }) {
         rows={3}
         placeholder='How was your experience with this listing and its owner? (optional)'
         aria-label='Review'
-        className='border rounded-lg p-2'
+        className='input'
       />
       {error && <p className='text-sm text-red-700'>{error}</p>}
       <button
         type='submit'
         disabled={saving}
-        className='self-start bg-slate-700 text-white px-4 py-2 rounded-lg uppercase disabled:opacity-60'
+        className='btn-primary self-start'
       >
         {saving ? 'Saving...' : ownReview ? 'Update review' : 'Post review'}
       </button>
@@ -97,7 +97,7 @@ export default function ListingReviews({ listingId }) {
   return (
     <section className='mt-4 flex flex-col gap-3'>
       <div className='flex items-center gap-2'>
-        <h2 className='text-xl font-semibold text-slate-700'>Reviews</h2>
+        <h2 className='text-xl font-semibold text-slate-900'>Reviews</h2>
         {count > 0 && (
           <span className='flex items-center gap-1 text-slate-600'>
             <StarRating value={average} />
