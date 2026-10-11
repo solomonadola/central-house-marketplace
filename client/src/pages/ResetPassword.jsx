@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiFetch } from '../utils/apiFetch';
+import AuthLayout from '../components/AuthLayout';
 
 export default function ResetPassword() {
   const { token } = useParams();
@@ -38,56 +39,60 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className='p-3 max-w-lg mx-auto'>
-      <h1 className='text-3xl text-center font-semibold my-7'>Choose a new password</h1>
+    <AuthLayout title='Choose a new password' subtitle='Use at least 8 characters.'>
       {done ? (
-        <p className='text-center'>
-          <span className='text-green-700'>Your password has been reset. </span>
-          <Link to='/sign-in' className='text-blue-700 hover:underline'>
+        <div role='status' className='rounded-lg bg-green-50 p-4 text-green-800'>
+          Your password has been reset.{' '}
+          <Link to='/sign-in' className='font-semibold underline'>
             Sign in
           </Link>
-        </p>
+        </div>
       ) : (
         <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
-          <input
-            type='password'
-            required
-            minLength={8}
-            placeholder='new password (at least 8 characters)'
-            aria-label='New password'
-            autoComplete='new-password'
-            className='border p-3 rounded-lg'
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <input
-            type='password'
-            required
-            placeholder='confirm new password'
-            aria-label='Confirm new password'
-            autoComplete='new-password'
-            className='border p-3 rounded-lg'
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-          />
-          <button
-            disabled={saving}
-            className='bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80'
-          >
-            {saving ? 'Saving...' : 'Reset password'}
-          </button>
+          <div>
+            <label htmlFor='new-password' className='label'>
+              New password
+            </label>
+            <input
+              id='new-password'
+              type='password'
+              required
+              minLength={8}
+              autoComplete='new-password'
+              className='input'
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor='confirm-password' className='label'>
+              Confirm new password
+            </label>
+            <input
+              id='confirm-password'
+              type='password'
+              required
+              autoComplete='new-password'
+              className='input'
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+            />
+          </div>
           {error && (
-            <p className='text-red-500'>
+            <p role='alert' className='rounded-lg bg-red-50 p-3 text-sm text-red-700'>
               {error}{' '}
               {/expired|invalid/i.test(error) && (
-                <Link to='/forgot-password' className='text-blue-700 hover:underline'>
+                <Link to='/forgot-password' className='font-semibold underline'>
                   Request a new link
                 </Link>
               )}
             </p>
           )}
+          <button disabled={saving} className='btn-primary w-full py-3'>
+            {saving ? 'Saving...' : 'Reset password'}
+          </button>
         </form>
       )}
-    </div>
+    </AuthLayout>
   );
 }
