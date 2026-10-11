@@ -101,6 +101,7 @@ export const deleteUser = async (req, res, next) => {
       Application.deleteMany({ $or: [{ applicant: userId }, { owner: userId }] }),
       Payment.deleteMany({ $or: [{ payer: userId }, { payee: userId }] }),
       Notification.deleteMany({ recipient: userId }),
+      User.updateMany({ blockedUsers: userId }, { $pull: { blockedUsers: userId } }),
       Message.deleteMany({ conversation: { $in: conversationIds } }),
       Conversation.deleteMany({ _id: { $in: conversationIds } }),
     ]);

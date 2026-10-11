@@ -38,6 +38,13 @@ const userSchema = new mongoose.Schema(
       type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Listing' }],
       default: [],
     },
+    // People this user has blocked. Private: select: false keeps it out of
+    // responses that spread the user document.
+    blockedUsers: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+      default: [],
+      select: false,
+    },
     // Whether important events are also emailed, not just shown in the
     // in-app notification inbox. Users can turn this off in their profile.
     emailNotifications: { type: Boolean, default: true },

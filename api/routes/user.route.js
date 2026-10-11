@@ -16,6 +16,7 @@ import { exportMyAnalytics, getMyAnalytics } from '../controllers/analytics.cont
 import { verifyToken } from '../utils/verifyUser.js';
 import { validateObjectId } from '../utils/validateObjectId.js';
 import { validate } from '../validation/validate.js';
+import { blockUser, getBlockStatus, listBlocked, unblockUser } from '../controllers/block.controller.js';
 import { updatePreferencesSchema, updateUserSchema } from '../validation/schemas.js';
 
 
@@ -32,6 +33,10 @@ router.get('/analytics/export', verifyToken, exportMyAnalytics)
 router.get('/favorites', verifyToken, getFavorites)
 router.put('/favorites/:id', verifyToken, addFavorite)
 router.delete('/favorites/:id', verifyToken, removeFavorite)
+router.get('/blocks', verifyToken, listBlocked)
+router.get('/blocks/:id', verifyToken, getBlockStatus)
+router.put('/blocks/:id', verifyToken, blockUser)
+router.delete('/blocks/:id', verifyToken, unblockUser)
 router.get('/preferences', verifyToken, getPreferences)
 router.patch('/preferences', verifyToken, validate(updatePreferencesSchema), updatePreferences)
 // Public: a seller's profile and active listings.

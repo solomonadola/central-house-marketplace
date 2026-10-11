@@ -3,6 +3,7 @@ import Listing from '../models/listing.model.js';
 import User from '../models/user.model.js';
 import { errorHandler } from '../utils/error.js';
 import { notifyQuestionAnswered, notifyQuestionAsked } from '../utils/notifications.js';
+import { blockedError, isBlockedBetween } from '../utils/blocks.js';
 
 const MAX_OPEN_QUESTIONS_PER_LISTING = 3;
 
@@ -48,6 +49,7 @@ export const askQuestion = async (req, res, next) => {
     if (listing.userRef === req.user.id) {
       return next(errorHandler(400, "You can't ask a question about your own listing!"));
     }
+    if (await isBlockedBetween(req.user.id, listing.userRef)) return next(blockedError());
 
     // Keeps one person from flooding a listing with unanswered questions.
     const open = await ListingQuestion.countDocuments({
