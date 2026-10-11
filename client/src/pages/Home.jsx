@@ -47,7 +47,7 @@ export default function Home() {
           to={'/search'}
           className='text-xs sm:text-sm text-blue-800 font-bold hover:underline'
         >
-          Let's get started...
+          Let&apos;s get started...
         </Link>
       </div>
 
