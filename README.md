@@ -10,7 +10,7 @@ Central House Marketplace is a platform where you can find houses for rent and s
 - See how many times each of your listings has been viewed
 - Create, edit and delete your own listings with up to 6 photos
 - Email/password and Google sign-in
-- Contact a listing's owner directly from the listing page
+- Message listing owners in the app, with an inbox, unread badges and live updates (email addresses stay private)
 - Profile management with avatar upload
 
 ## Tech stack
@@ -62,7 +62,7 @@ npm install --prefix client
 npm run seed
 ```
 
-This creates 4 demo users and 20 listings in San Francisco neighbourhoods. Sign in with `sarah_homes@demo.centralhouse.local` / `password123`. Re-running the command only replaces the demo data and never touches other accounts.
+This creates 4 demo users, 20 listings in San Francisco neighbourhoods, and a few sample conversations. Sign in with `sarah_homes@demo.centralhouse.local` / `password123`. Re-running the command only replaces the demo data and never touches other accounts.
 
 ### 4. Run the app
 
@@ -155,6 +155,11 @@ All responses are JSON. Errors have the shape `{ success: false, statusCode, mes
 | GET    | `/api/listing/get/:id`      | Get one listing                                   |
 | GET    | `/api/listing/get`          | Search listings (see below)                       |
 | POST   | `/api/listing/view/:id`     | Count a view of a listing (rate-limited)          |
+| GET    | `/api/messages/conversations` 🔒 | Your conversations with unread counts        |
+| POST   | `/api/messages/conversations` 🔒 | Message a listing's owner (`listingId`, `body`) |
+| GET    | `/api/messages/conversations/:id` 🔒 | Latest 50 messages (`?before=<date>` for older); marks read |
+| POST   | `/api/messages/conversations/:id/messages` 🔒 | Reply in a conversation (`body`) |
+| GET    | `/api/messages/unread-count` 🔒 | Number of conversations with unread messages |
 
 Search query parameters: `searchTerm`, `type` (`rent` / `sale` / `all`), `offer`, `parking`, `furnished` (`true` to require), `minPrice` / `maxPrice` (compared against the discounted price for offers), `minBedrooms`, `minBathrooms`, `sort` (`createdAt` / `regularPrice`), `order` (`asc` / `desc`), `limit` (1-50, default 9), `startIndex`. The response body is an array of listings; the `X-Total-Count` header gives the total number of matches.
 
@@ -164,6 +169,8 @@ Search query parameters: `searchTerm`, `type` (`rent` / `sale` / `all`), `offer`
 - Google sign-in tokens are verified server-side with `firebase-admin`.
 - Request bodies are validated with Zod, and search parameters are restricted to known values.
 - Failed auth attempts are rate-limited to 10 per IP per 15 minutes.
+- Messages are rate-limited to 30 per IP per minute, and listing views to 60 per IP per hour.
+- Other users only see your username and avatar; your email and saved listings stay private.
 - Security headers are set with `helmet`.
 
 ## License

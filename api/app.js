@@ -2,6 +2,7 @@ import express from 'express';
 import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.route.js';
 import listingRouter from './routes/listing.route.js';
+import messageRouter from './routes/message.route.js';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import path from 'path';
@@ -34,6 +35,7 @@ app.use(cookieParser());
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
+app.use('/api/messages', messageRouter);
 
 // Unknown API routes get a JSON 404 instead of falling through to the
 // client's index.html below.

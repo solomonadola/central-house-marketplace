@@ -2,6 +2,8 @@ import bcryptjs from 'bcryptjs';
 import User from '../models/user.model.js';
 import { errorHandler } from '../utils/error.js';
 import Listing from '../models/listing.model.js';
+import Conversation from '../models/conversation.model.js';
+import Message from '../models/message.model.js';
 import { clearAuthCookie } from '../utils/authCookie.js';
 
 export const test = (req, res) => {
@@ -50,6 +52,9 @@ export const deleteUser = async (req, res, next) => {
       { favorites: { $in: listingIds } },
       { $pull: { favorites: { $in: listingIds } } }
     );
+    const conversationIds = await Conversation.find({ 'participants.user': req.params.id }).distinct('_id');
+    await Message.deleteMany({ conversation: { $in: conversationIds } });
+    await Conversation.deleteMany({ _id: { $in: conversationIds } });
     clearAuthCookie(res);
     res.status(200).json('User has been deleted!');
   } catch (error) {
@@ -77,10 +82,12 @@ export const getUser = async (req, res, next) => {
   
     if (!user) return next(errorHandler(404, 'User not found!'));
   
-    // Other users can call this, so leave out private fields.
-    const { password: pass, favorites, ...rest } = user._doc;
-  
-    res.status(200).json(rest);
+    // Other users can call this, so leave out private fields. Contact
+    // happens through in-app messages, so others don't need the email.
+    const { password: pass, favorites, email, ...rest } = user._doc;
+    const isSelf = req.user.id === req.params.id;
+
+    res.status(200).json(isSelf ? { ...rest, email } : rest);
   } catch (error) {
     next(error);
   }

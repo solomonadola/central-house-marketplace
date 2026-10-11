@@ -3,12 +3,16 @@ import { configureStore } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import userReducer from '../redux/user/userSlice';
+import inboxReducer from '../redux/inbox/inboxSlice';
 
 // Renders with a fresh (non-persisted) Redux store and an in-memory router.
-export const renderWithProviders = (ui, { currentUser = null, route = '/' } = {}) => {
+export const renderWithProviders = (ui, { currentUser = null, route = '/', unreadCount = 0 } = {}) => {
   const store = configureStore({
-    reducer: { user: userReducer },
-    preloadedState: { user: { currentUser, error: null, loading: false } },
+    reducer: { user: userReducer, inbox: inboxReducer },
+    preloadedState: {
+      user: { currentUser, error: null, loading: false },
+      inbox: { unreadCount },
+    },
   });
 
   return {
