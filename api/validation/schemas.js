@@ -139,3 +139,17 @@ export const resetPasswordSchema = z.object({
 export const verifyEmailSchema = z.object({
   token: z.string().min(1, 'Confirmation link is invalid'),
 });
+
+const moderationReason = z
+  .string({ required_error: 'Please give a reason' })
+  .trim()
+  .min(1, 'Please give a reason')
+  .max(300, 'Reason must be at most 300 characters');
+
+export const updateReportSchema = z.object({
+  status: z.enum(['open', 'resolved', 'dismissed'], {
+    errorMap: () => ({ message: "Status must be 'open', 'resolved' or 'dismissed'" }),
+  }),
+});
+
+export const moderationReasonSchema = z.object({ reason: moderationReason });

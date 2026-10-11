@@ -7,7 +7,7 @@ import Message from '../models/message.model.js';
 import Review from '../models/review.model.js';
 import Report from '../models/report.model.js';
 import { updateListingRating } from '../utils/ratings.js';
-import { clearAuthCookie } from '../utils/authCookie.js';
+import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
 import { sendVerificationEmail } from '../utils/emailVerification.js';
 
 export const test = (req, res) => {
@@ -39,12 +39,16 @@ export const updateUser = async (req, res, next) => {
           avatar: req.body.avatar,
           ...(emailChanged && { emailVerified: false }),
         },
+        // A new password signs out other devices; this one gets a new cookie below.
+        ...(req.body.password && { $inc: { tokenVersion: 1 } }),
       },
       { new: true }
-    );
+    ).select('+tokenVersion');
     if (emailChanged) await sendVerificationEmail(updatedUser);
 
-    const { password, ...rest } = updatedUser._doc;
+    if (req.body.password) setAuthCookie(res, updatedUser);
+
+    const { password, tokenVersion, ...rest } = updatedUser._doc;
 
     res.status(200).json(rest);
   } catch (error) {
@@ -113,9 +117,12 @@ export const getUser = async (req, res, next) => {
 
 export const getFavorites = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).populate('favorites');
+    const user = await User.findById(req.user.id).populate({
+      path: 'favorites',
+      match: { hidden: { $ne: true } },
+    });
     if (!user) return next(errorHandler(404, 'User not found!'));
-    // populate() leaves null for listings that were deleted.
+    // populate() leaves null for listings that were deleted or are hidden.
     res.status(200).json(user.favorites.filter(Boolean));
   } catch (error) {
     next(error);

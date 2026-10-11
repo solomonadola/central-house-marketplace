@@ -89,4 +89,14 @@ describe('Header', () => {
     expect(screen.queryByRole('link', { name: /messages/i })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it('links admins to the dashboard', () => {
+    renderHeader({ currentUser: { _id: 'a', role: 'admin', favorites: [] } });
+    expect(screen.getByRole('link', { name: 'Admin' })).toHaveAttribute('href', '/admin');
+  });
+
+  it('does not show the admin link to other users', () => {
+    renderHeader({ currentUser: { _id: 'u', role: 'user', favorites: [] } });
+    expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
+  });
 });

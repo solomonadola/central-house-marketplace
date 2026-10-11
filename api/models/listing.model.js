@@ -68,6 +68,12 @@ const listingSchema = new mongoose.Schema(
     // Kept in sync with the listing's reviews for cheap display and sorting.
     ratingAverage: { type: Number, default: 0, min: 0, max: 5 },
     ratingCount: { type: Number, default: 0, min: 0 },
+    // Hidden listings are only visible to their owner and admins.
+    hidden: { type: Boolean, default: false },
+    hiddenReason: { type: String, default: '' },
+    // 'moderation' when an admin hid it; 'suspension' when the owner was
+    // suspended, so unsuspending only restores those.
+    hiddenBy: { type: String, enum: ['moderation', 'suspension', null], default: null },
     views: {
       type: Number,
       default: 0,

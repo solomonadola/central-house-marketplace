@@ -66,6 +66,19 @@ describe('Listing page', () => {
     expect(screen.queryByRole('heading', { name: 'Location' })).not.toBeInTheDocument();
   });
 
+  it('tells the owner why their listing is hidden', async () => {
+    fetchMock.mockImplementation(async (url) =>
+      url.startsWith('/api/reviews/')
+        ? jsonResponse({ average: 0, count: 0, reviews: [], viewer: null })
+        : jsonResponse(makeListing({ userRef: 'owner1', hidden: true, hiddenReason: 'Misleading photos' }))
+    );
+    renderListing({ _id: 'owner1', favorites: [] });
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'This listing is hidden from the public: Misleading photos'
+    );
+  });
+
   it('shows an error for a missing listing', async () => {
     fetchMock.mockImplementation(async () => jsonResponse({ success: false, message: 'Listing not found!' }, 404));
     renderListing(null);

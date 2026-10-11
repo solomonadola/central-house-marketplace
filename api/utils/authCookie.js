@@ -9,8 +9,10 @@ const cookieOptions = {
   secure: process.env.NODE_ENV === 'production',
 };
 
-export const setAuthCookie = (res, userId) => {
-  const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+// Pass a user document loaded with '+tokenVersion'; the token records the
+// version so bumping it on the user invalidates every older session.
+export const setAuthCookie = (res, user) => {
+  const token = jwt.sign({ id: user._id, tv: user.tokenVersion ?? 0 }, process.env.JWT_SECRET, {
     expiresIn: `${TOKEN_TTL_DAYS}d`,
   });
   return res.cookie(COOKIE_NAME, token, {

@@ -28,7 +28,7 @@ export const startConversation = async (req, res, next) => {
   try {
     const { listingId, body } = req.body;
     const listing = await Listing.findById(listingId);
-    if (!listing) return next(errorHandler(404, 'Listing not found!'));
+    if (!listing || listing.hidden) return next(errorHandler(404, 'Listing not found!'));
     if (listing.userRef === req.user.id) {
       return next(errorHandler(400, "You can't message yourself about your own listing!"));
     }
@@ -140,7 +140,7 @@ export const getConversation = async (req, res, next) => {
       conversation: conversation._id,
       ...(before && { createdAt: { $lt: before } }),
     })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .limit(PAGE_SIZE + 1);
 
     const hasMore = newestFirst.length > PAGE_SIZE;
