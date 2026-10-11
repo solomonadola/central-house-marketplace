@@ -134,6 +134,16 @@ const seed = async () => {
     users.map((u) => ({ ...u, email: `${u.username}${SEED_DOMAIN}`, emailVerified: true, password }))
   );
 
+  // A moderator account to try the admin dashboard with. Created
+  // separately so it doesn't own any of the demo listings.
+  await User.create({
+    username: 'admin',
+    email: `admin${SEED_DOMAIN}`,
+    emailVerified: true,
+    role: 'admin',
+    password,
+  });
+
   const now = Date.now();
   const docs = listings.map(
     ([name, description, address, type, regularPrice, discountPrice, bedrooms, bathrooms, furnished, parking, [lat, lng]], i) => ({
@@ -207,6 +217,7 @@ const seed = async () => {
       `${conversations.length} conversations and ${reviews.length} reviews`
   );
   console.log(`Demo login: ${createdUsers[0].email} / ${SEED_PASSWORD}`);
+  console.log(`Admin login: admin${SEED_DOMAIN} / ${SEED_PASSWORD}`);
 };
 
 seed()

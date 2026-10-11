@@ -10,7 +10,8 @@
     "build": "npm install && npm install --prefix client && npm run build --prefix client",
     "seed": "node api/seed.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "make-admin": "node api/scripts/setRole.js"
   },
   "keywords": [],
   "author": "",
