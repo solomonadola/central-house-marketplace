@@ -1,0 +1,14 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+node_modules
+client/node_modules
+client/dist
+client/.env
+**/*.log
+**/*.test.js
+**/*.test.jsx
+api/test
+coverage

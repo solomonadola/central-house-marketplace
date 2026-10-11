@@ -1,0 +1,46 @@
+# Runs the app and MongoDB together:
+#
+#   JWT_SECRET=<random string> docker compose up --build
+#
+# then open http://localhost:8080. Load demo data with:
+#
+#   docker compose exec app node api/seed.js
+#
+# Values come from your shell or a .env file next to this one.
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      args:
+        VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY:-}
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - '${APP_PORT:-8080}:3000'
+    environment:
+      DB: mongodb://mongo:27017/central-house
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET (any long random string)}
+      PORT: 3000
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      # Served over plain HTTP locally; set to true behind HTTPS.
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-centralhousemarketplace}
+      SMTP_URL: ${SMTP_URL:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      GEOCODING: ${GEOCODING:-}
+
+volumes:
+  mongo-data:
