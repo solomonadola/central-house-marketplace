@@ -1,9 +1,34 @@
 import Listing from '../models/listing.model.js';
 import { errorHandler } from '../utils/error.js';
 
+// Fields a client may set. Ownership (userRef) is always taken from the
+// auth token so users can't create or transfer listings as someone else.
+const EDITABLE_FIELDS = [
+  'name',
+  'description',
+  'address',
+  'regularPrice',
+  'discountPrice',
+  'bathrooms',
+  'bedrooms',
+  'furnished',
+  'parking',
+  'type',
+  'offer',
+  'imageUrls',
+];
+
+const pickEditable = (body) =>
+  Object.fromEntries(
+    EDITABLE_FIELDS.filter((key) => key in body).map((key) => [key, body[key]])
+  );
+
 export const createListing = async (req, res, next) => {
   try {
-    const listing = await Listing.create(req.body);
+    const listing = await Listing.create({
+      ...pickEditable(req.body),
+      userRef: req.user.id,
+    });
     return res.status(201).json(listing);
   } catch (error) {
     next(error);
@@ -41,8 +66,8 @@ export const updateListing = async (req, res, next) => {
   try {
     const updatedListing = await Listing.findByIdAndUpdate(
       req.params.id,
-      req.body,
-      { new: true }
+      pickEditable(req.body),
+      { new: true, runValidators: true }
     );
     res.status(200).json(updatedListing);
   } catch (error) {
