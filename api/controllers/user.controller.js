@@ -5,6 +5,7 @@ import Listing from '../models/listing.model.js';
 import Conversation from '../models/conversation.model.js';
 import Message from '../models/message.model.js';
 import Review from '../models/review.model.js';
+import Report from '../models/report.model.js';
 import { updateListingRating } from '../utils/ratings.js';
 import { clearAuthCookie } from '../utils/authCookie.js';
 
@@ -59,6 +60,7 @@ export const deleteUser = async (req, res, next) => {
     await Review.deleteMany({ listing: { $in: listingIds } });
     const reviewedListings = await Review.find({ author: req.params.id }).distinct('listing');
     await Review.deleteMany({ author: req.params.id });
+    await Report.deleteMany({ reporter: req.params.id });
     await Promise.all(reviewedListings.map(updateListingRating));
     const conversationIds = await Conversation.find({ 'participants.user': req.params.id }).distinct('_id');
     await Message.deleteMany({ conversation: { $in: conversationIds } });

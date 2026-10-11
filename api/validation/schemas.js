@@ -120,3 +120,11 @@ export const reviewSchema = z.object({
   ),
   comment: z.string().trim().max(1000, 'Review must be at most 1000 characters').optional().default(''),
 });
+
+export const reportSchema = z.object({
+  listingId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid listing id'),
+  reason: z.enum(['scam', 'inaccurate', 'inappropriate', 'unavailable', 'other'], {
+    errorMap: () => ({ message: 'Please choose a reason' }),
+  }),
+  details: z.string().trim().max(1000, 'Details must be at most 1000 characters').optional().default(''),
+});
