@@ -83,6 +83,18 @@ npm start       # serves the API and the built client on PORT
 
 When deploying, set `NODE_ENV=production` so the auth cookie is marked `Secure`, and `TRUST_PROXY=1` if the app runs behind a reverse proxy.
 
+## Testing
+
+```bash
+npm test                    # API tests (Vitest + Supertest, in-memory MongoDB)
+npm test --prefix client    # client tests (Vitest + React Testing Library)
+npm run lint --prefix client
+```
+
+The API tests start their own in-memory MongoDB, so they don't need a database or a `.env` file. The first run downloads the MongoDB binary (~100 MB). Use `npm run test:watch` in either folder to re-run tests on change.
+
+CI runs all of the above, plus the client production build, on every pull request and on every push to `master`.
+
 ## Scripts
 
 | Command                       | Description                                   |
@@ -91,6 +103,8 @@ When deploying, set `NODE_ENV=production` so the auth cookie is marked `Secure`,
 | `npm start`                   | Start the API (and serve `client/dist`)       |
 | `npm run build`               | Install all dependencies and build the client |
 | `npm run seed`                | Reset the demo users and listings             |
+| `npm test`                    | Run the API tests                             |
+| `npm test --prefix client`    | Run the client tests                          |
 | `npm run dev --prefix client` | Start the Vite dev server                     |
 
 ## Project structure
@@ -102,13 +116,17 @@ api/
   routes/        Express routers
   utils/         Auth cookie, Firebase token verification, rate limiting, errors
   validation/    Zod request schemas and the validate middleware
-  index.js       App entry point
+  test/          API tests and test setup
+  app.js         Express app (routes, middleware, error handling)
+  index.js       Entry point: checks config, connects to MongoDB, starts the server
   seed.js        Demo data script
 client/
   src/
     components/  Shared UI (header, listing card, OAuth button, ...)
     pages/       Route pages (home, search, listing, profile, ...)
     redux/       User state slice and persisted store
+    utils/       apiFetch (signs out on an expired session)
+    test/        Client test setup and helpers
 ```
 
 ## API
