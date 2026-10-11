@@ -61,6 +61,11 @@ export default function Header() {
               About
             </li>
           </Link>
+          {currentUser?.role === 'admin' && (
+            <Link to='/admin'>
+              <li className='text-slate-700 font-semibold hover:underline'>Admin</li>
+            </Link>
+          )}
           {currentUser && (
             <Link
               to='/messages'
