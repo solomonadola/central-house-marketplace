@@ -17,6 +17,7 @@ import {
 import Contact from '../components/Contact';
 import FavoriteButton from '../components/FavoriteButton';
 import ListingsMap from '../components/ListingsMap';
+import ListingReviews from '../components/ListingReviews';
 import { apiFetch } from '../utils/apiFetch';
 import { recordView } from '../utils/recordView';
 
@@ -170,6 +171,7 @@ export default function Listing() {
                 <ListingsMap listings={[listing]} className='h-[350px]' />
               </section>
             )}
+            <ListingReviews listingId={listing._id} />
           </div>
         </div>
       )}

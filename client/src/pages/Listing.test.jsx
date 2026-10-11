@@ -23,11 +23,11 @@ describe('Listing page', () => {
 
   beforeEach(() => {
     sessionStorage.clear();
-    fetchMock = vi.fn(async (url) =>
-      url.startsWith('/api/listing/view/')
-        ? jsonResponse({ views: 8 })
-        : jsonResponse(makeListing({ userRef: 'owner1', views: 7 }))
-    );
+    fetchMock = vi.fn(async (url) => {
+      if (url.startsWith('/api/listing/view/')) return jsonResponse({ views: 8 });
+      if (url.startsWith('/api/reviews/')) return jsonResponse({ average: 0, count: 0, reviews: [], viewer: null });
+      return jsonResponse(makeListing({ userRef: 'owner1', views: 7 }));
+    });
     vi.stubGlobal('fetch', fetchMock);
   });
 
@@ -38,7 +38,7 @@ describe('Listing page', () => {
 
     expect(await screen.findByText(/Bright Two-Bedroom Apartment/)).toBeInTheDocument();
     await waitFor(() => expect(viewCalls(fetchMock)).toHaveLength(1));
-    expect(screen.queryByText(/views/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^\d+ views?$/)).not.toBeInTheDocument();
   });
 
   it('does not record a view for the owner, and shows them the count', async () => {
@@ -49,8 +49,10 @@ describe('Listing page', () => {
   });
 
   it('shows a map when the listing has a location', async () => {
-    fetchMock.mockImplementation(async () =>
-      jsonResponse(makeListing({ location: { lat: 37.76, lng: -122.42 } }))
+    fetchMock.mockImplementation(async (url) =>
+      url.startsWith('/api/reviews/')
+        ? jsonResponse({ average: 0, count: 0, reviews: [], viewer: null })
+        : jsonResponse(makeListing({ location: { lat: 37.76, lng: -122.42 } }))
     );
     renderListing(null);
 
