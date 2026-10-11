@@ -38,6 +38,11 @@ const userSchema = new mongoose.Schema(
       type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Listing' }],
       default: [],
     },
+    // Whether important events are also emailed, not just shown in the
+    // in-app notification inbox. Users can turn this off in their profile.
+    emailNotifications: { type: Boolean, default: true },
+    // Product news and tips. Off by default.
+    marketingEmails: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
