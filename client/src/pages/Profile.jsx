@@ -246,6 +246,9 @@ export default function Profile() {
       <button onClick={handleShowListings} className='text-green-700 w-full'>
         Show Listings
       </button>
+      <Link to='/analytics' className='block text-center text-slate-700 hover:underline mt-2'>
+        View listing analytics
+      </Link>
       <p className='text-red-700 mt-5'>
         {showListingsError ? 'Error showing listings' : ''}
       </p>

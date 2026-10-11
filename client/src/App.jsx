@@ -18,6 +18,7 @@ import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import Admin from './pages/Admin';
 import Viewings from './pages/Viewings';
+import Analytics from './pages/Analytics';
 import AdminRoute from './components/AdminRoute';
 
 export default function App() {
@@ -40,6 +41,7 @@ export default function App() {
           <Route path='/profile' element={<Profile />} />
           <Route path='/saved' element={<Saved />} />
           <Route path='/viewings' element={<Viewings />} />
+          <Route path='/analytics' element={<Analytics />} />
           <Route path='/messages' element={<Messages />} />
           <Route path='/messages/:conversationId' element={<Messages />} />
           <Route path='/create-listing' element={<CreateListing />} />
