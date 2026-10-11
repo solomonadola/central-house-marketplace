@@ -8,3 +8,7 @@ export const formatShortPrice = (listing) => {
   if (price >= 10_000) return `$${Math.round(price / 1000)}k`;
   return `$${price.toLocaleString('en-US')}`;
 };
+
+// Whole-number percentage change from a previous price, e.g. -12 or 5.
+export const percentChange = (price, previousPrice) =>
+  previousPrice ? Math.round(((price - previousPrice) / previousPrice) * 100) : 0;

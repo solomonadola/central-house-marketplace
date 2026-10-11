@@ -25,6 +25,7 @@ import ApplyForm from '../components/ApplyForm';
 import ListingGrid from '../components/ListingGrid';
 import ListingsMap from '../components/ListingsMap';
 import ListingReviews from '../components/ListingReviews';
+import PriceHistory from '../components/PriceHistory';
 import ListingAvailability from '../components/ListingAvailability';
 import ReportListing from '../components/ReportListing';
 import RequestViewing from '../components/RequestViewing';
@@ -304,6 +305,7 @@ export default function Listing() {
             </section>
           )}
 
+          <PriceHistory listingId={listing._id} perMonth={listing.type === 'rent'} />
           <ListingReviews listingId={listing._id} />
           {currentUser && !isOwner && <ReportListing listingId={listing._id} />}
         </div>

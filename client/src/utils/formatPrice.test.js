@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { effectivePrice, formatShortPrice } from './formatPrice';
+import { effectivePrice, formatShortPrice, percentChange } from './formatPrice';
 
 const listing = (regularPrice, offer = false, discountPrice = 0) => ({ regularPrice, offer, discountPrice });
 
@@ -23,5 +23,13 @@ describe('formatShortPrice', () => {
 
   it('formats the discounted price', () => {
     expect(formatShortPrice(listing(500000, true, 459000))).toBe('$459k');
+  });
+});
+
+describe('percentChange', () => {
+  it('rounds the change from the previous price', () => {
+    expect(percentChange(900, 1000)).toBe(-10);
+    expect(percentChange(1050, 1000)).toBe(5);
+    expect(percentChange(1000, null)).toBe(0);
   });
 });

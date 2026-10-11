@@ -1,4 +1,5 @@
 import {
+  FaArrowDown,
   FaBell,
   FaCalendarCheck,
   FaCalendarMinus,
@@ -38,6 +39,7 @@ export const NOTIFICATION_ICONS = {
   application_status: { Icon: FaFileAlt, tone: 'text-green-600 bg-green-50' },
   payment_received: { Icon: FaMoneyCheckAlt, tone: 'text-green-600 bg-green-50' },
   payment_refunded: { Icon: FaMoneyCheckAlt, tone: 'text-sky-600 bg-sky-50' },
+  price_drop: { Icon: FaArrowDown, tone: 'text-emerald-600 bg-emerald-50' },
 };
 
 const FALLBACK = { Icon: FaBell, tone: 'text-slate-600 bg-slate-100' };
