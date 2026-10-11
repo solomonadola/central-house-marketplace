@@ -18,7 +18,8 @@ describe('ListingItem', () => {
 
   it('shows the monthly price for rentals', () => {
     renderItem({ regularPrice: 1500 });
-    expect(screen.getByText(/\$1,500 \/ month/)).toBeInTheDocument();
+    // "/ month" is styled separately, so match the whole price line.
+    expect(screen.getByText((_, el) => el.tagName === 'P' && el.textContent === '$1,500 / month')).toBeInTheDocument();
   });
 
   it('shows the plain price for sales', () => {
@@ -30,6 +31,12 @@ describe('ListingItem', () => {
     renderItem({ type: 'sale', regularPrice: 450000, offer: true, discountPrice: 425000 });
     expect(screen.getByText('$425,000')).toBeInTheDocument();
     expect(screen.queryByText('$450,000')).not.toBeInTheDocument();
+  });
+
+  it('shows the rent or sale badge and the discount', () => {
+    renderItem({ type: 'sale', regularPrice: 500000, offer: true, discountPrice: 450000 });
+    expect(screen.getByText('For sale')).toBeInTheDocument();
+    expect(screen.getByText('10% off')).toBeInTheDocument();
   });
 
   it('uses singular and plural room labels', () => {

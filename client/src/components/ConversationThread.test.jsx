@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ConversationThread from './ConversationThread';
 import { renderWithProviders } from '../test/utils';
@@ -37,10 +37,7 @@ describe('ConversationThread', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.useRealTimers();
-  });
+  afterEach(() => vi.unstubAllGlobals());
 
   const renderThread = (onActivity = vi.fn()) => {
     renderWithProviders(<ConversationThread conversationId='c1' onActivity={onActivity} />, {
@@ -112,15 +109,16 @@ describe('ConversationThread', () => {
   });
 
   it('picks up new messages while open', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const onActivity = renderThread();
+    const onActivity = vi.fn();
+    renderWithProviders(<ConversationThread conversationId='c1' onActivity={onActivity} pollMs={50} />, {
+      currentUser: { _id: 'me' },
+    });
     await screen.findByText('Hi there');
 
     latest = { ...latest, messages: [...latest.messages, message('Saturday works!', 'u2')] };
-    await act(() => vi.advanceTimersByTimeAsync(5_000));
 
     expect(await screen.findByText('Saturday works!')).toBeInTheDocument();
-    expect(onActivity).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(onActivity).toHaveBeenCalledTimes(2));
   });
 
   it('loads older messages', async () => {

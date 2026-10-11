@@ -54,8 +54,8 @@ describe('Search page', () => {
 
     expect(screen.getByLabelText('Minimum price')).toHaveValue(500);
     expect(screen.getByLabelText('Maximum price')).toHaveValue(2000);
-    expect(screen.getByLabelText('Beds:')).toHaveValue('3');
-    expect(screen.getByLabelText('Baths:')).toHaveValue('2');
+    expect(screen.getByLabelText('Bedrooms')).toHaveValue('3');
+    expect(screen.getByLabelText('Bathrooms')).toHaveValue('2');
     expect(screen.getByDisplayValue('Price low to high')).toBeInTheDocument();
     await screen.findByText('Bright Two-Bedroom Apartment');
   });
@@ -66,8 +66,8 @@ describe('Search page', () => {
 
     await userEvent.type(screen.getByLabelText('Minimum price'), '800');
     await userEvent.type(screen.getByLabelText('Maximum price'), '2500');
-    await userEvent.selectOptions(screen.getByLabelText('Beds:'), '2');
-    await userEvent.click(screen.getByRole('button', { name: /search/i }));
+    await userEvent.selectOptions(screen.getByLabelText('Bedrooms'), '2');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
 
     await waitFor(() => {
       const params = new URLSearchParams(screen.getByTestId('location').textContent);
@@ -118,7 +118,7 @@ describe('Search page', () => {
     const { container, unmount } = renderSearch();
     await screen.findByText('Listing Without Location');
 
-    await userEvent.click(screen.getByRole('button', { name: 'map' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Map' }));
 
     expect(container.querySelectorAll('.listing-price-marker')).toHaveLength(1);
     expect(screen.queryByText('Listing Without Location')).not.toBeInTheDocument();
@@ -126,7 +126,7 @@ describe('Search page', () => {
 
     unmount();
     renderSearch();
-    expect(await screen.findByRole('button', { name: 'map' })).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByRole('button', { name: 'Map' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('shows a message when nothing matches', async () => {
@@ -134,5 +134,30 @@ describe('Search page', () => {
     renderSearch('/search?minPrice=99999999');
 
     expect(await screen.findByText('No listing found!')).toBeInTheDocument();
+  });
+
+  it('fills the property type and amenities filters from the URL', async () => {
+    renderSearch('/search?propertyType=house&amenities=garden,wifi');
+
+    expect(screen.getByLabelText('Property type')).toHaveValue('house');
+    expect(screen.getByRole('checkbox', { name: 'Garden' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Wi-Fi' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Pool' })).not.toBeChecked();
+    await screen.findByText('Bright Two-Bedroom Apartment');
+  });
+
+  it('adds amenities and property type to the URL on submit', async () => {
+    renderSearch();
+    await screen.findByText('Bright Two-Bedroom Apartment');
+
+    await userEvent.selectOptions(screen.getByLabelText('Property type'), 'studio');
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Garden' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+
+    await waitFor(() => {
+      const params = new URLSearchParams(screen.getByTestId('location').textContent);
+      expect(params.get('propertyType')).toBe('studio');
+      expect(params.get('amenities')).toBe('garden');
+    });
   });
 });

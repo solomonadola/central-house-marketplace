@@ -4,14 +4,26 @@ import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import userReducer from '../redux/user/userSlice';
 import inboxReducer from '../redux/inbox/inboxSlice';
+import notificationReducer from '../redux/notifications/notificationSlice';
+import compareReducer from '../redux/compare/compareSlice';
 
 // Renders with a fresh (non-persisted) Redux store and an in-memory router.
-export const renderWithProviders = (ui, { currentUser = null, route = '/', unreadCount = 0 } = {}) => {
+export const renderWithProviders = (
+  ui,
+  { currentUser = null, route = '/', unreadCount = 0, notifications = [], compareIds = [] } = {}
+) => {
   const store = configureStore({
-    reducer: { user: userReducer, inbox: inboxReducer },
+    reducer: {
+      user: userReducer,
+      inbox: inboxReducer,
+      notifications: notificationReducer,
+      compare: compareReducer,
+    },
     preloadedState: {
       user: { currentUser, error: null, loading: false },
       inbox: { unreadCount },
+      notifications: { items: notifications, unreadCount: notifications.filter((n) => !n.read).length },
+      compare: { ids: compareIds },
     },
   });
 

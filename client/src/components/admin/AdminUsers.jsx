@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useFetchJson } from '../../hooks/useFetchJson';
 import { apiFetch } from '../../utils/apiFetch';
 import { formatShortTime } from '../../utils/formatTime';
@@ -27,7 +28,9 @@ function UserRow({ user, onChanged }) {
   return (
     <li className='border rounded-lg p-3 bg-white flex flex-col gap-2'>
       <div className='flex flex-wrap items-center gap-2'>
-        <span className='font-semibold text-slate-700'>{user.username}</span>
+        <Link to={`/admin/user/${user._id}`} className='font-semibold text-slate-700 hover:underline'>
+          {user.username}
+        </Link>
         <span className='text-sm text-slate-500'>{user.email}</span>
         {user.role === 'admin' && (
           <span className='rounded-full bg-slate-700 text-white text-xs px-2 py-0.5'>Admin</span>

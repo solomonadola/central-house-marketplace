@@ -7,6 +7,7 @@ import {
   signInFailure,
 } from '../redux/user/userSlice';
 import OAuth from '../components/OAuth';
+import AuthLayout, { Divider } from '../components/AuthLayout';
 import { apiFetch } from '../utils/apiFetch';
 
 export default function SignIn() {
@@ -44,43 +45,50 @@ export default function SignIn() {
     }
   };
   return (
-    <div className='p-3 max-w-lg mx-auto'>
-      <h1 className='text-3xl text-center font-semibold my-7'>Sign In</h1>
-      {notice && <p className='text-green-700 text-center mb-4'>{notice}</p>}
+    <AuthLayout title='Welcome back' subtitle='Sign in to message owners, save homes and book viewings.'>
+      {notice && <p className='mb-6 rounded-lg bg-green-50 p-3 text-sm text-green-800'>{notice}</p>}
       <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
-        <input
-          type='email'
-          placeholder='email'
-          className='border p-3 rounded-lg'
-          id='email'
-          onChange={handleChange}
-        />
-        <input
-          type='password'
-          placeholder='password'
-          className='border p-3 rounded-lg'
-          id='password'
-          onChange={handleChange}
-        />
-        <Link to='/forgot-password' className='self-end text-sm text-blue-700 hover:underline'>
-          Forgot password?
-        </Link>
-
-        <button
-          disabled={loading}
-          className='bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80'
-        >
-          {loading ? 'Loading...' : 'Sign In'}
+        <div>
+          <label htmlFor='email' className='label'>
+            Email
+          </label>
+          <input type='email' id='email' autoComplete='email' required className='input' onChange={handleChange} />
+        </div>
+        <div>
+          <div className='flex items-baseline justify-between'>
+            <label htmlFor='password' className='label'>
+              Password
+            </label>
+            <Link to='/forgot-password' className='text-sm font-medium text-brand-700 hover:text-brand-800'>
+              Forgot password?
+            </Link>
+          </div>
+          <input
+            type='password'
+            id='password'
+            autoComplete='current-password'
+            required
+            className='input'
+            onChange={handleChange}
+          />
+        </div>
+        {error && (
+          <p role='alert' className='rounded-lg bg-red-50 p-3 text-sm text-red-700'>
+            {error}
+          </p>
+        )}
+        <button disabled={loading} className='btn-primary w-full py-3'>
+          {loading ? 'Signing in...' : 'Sign in'}
         </button>
-        <OAuth/>
+        <Divider />
+        <OAuth />
       </form>
-      <div className='flex gap-2 mt-5'>
-        <p>Don&apos;t have an account?</p>
-        <Link to={'/sign-up'}>
-          <span className='text-blue-700'>Sign up</span>
+      <p className='mt-6 text-center text-sm text-slate-600'>
+        Don&apos;t have an account?{' '}
+        <Link to='/sign-up' className='font-semibold text-brand-700 hover:text-brand-800'>
+          Sign up
         </Link>
-      </div>
-      {error && <p className='text-red-500 mt-5'>{error}</p>}
-    </div>
+      </p>
+    </AuthLayout>
   );
 }

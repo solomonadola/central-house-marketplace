@@ -18,6 +18,9 @@ export const createUser = async ({ password = PASSWORD, ...overrides } = {}) => 
     email: `user${id}@example.com`,
     // Most tests act as established, verified users.
     emailVerified: true,
+    // Keep tests from printing notification emails; in-app notifications
+    // are still created.
+    emailNotifications: false,
     ...overrides,
     // Low cost factor keeps tests fast.
     password: bcryptjs.hashSync(password, 4),

@@ -47,7 +47,10 @@ describe('Messages page', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
   it('lists conversations and prompts to pick one', async () => {
     renderMessages('/messages');
@@ -80,5 +83,54 @@ describe('Messages page', () => {
     renderMessages('/messages');
 
     expect(await screen.findByText('Could not load your messages.')).toBeInTheDocument();
+  });
+
+  it('filters conversations by search', async () => {
+    renderMessages('/messages');
+    await screen.findByText('maria');
+
+    await userEvent.type(screen.getByLabelText('Search conversations'), 'nothing matches');
+
+    expect(await screen.findByText(/No conversations match/)).toBeInTheDocument();
+    expect(screen.queryByText('maria')).not.toBeInTheDocument();
+  });
+
+  it('marks all conversations as read', async () => {
+    fetchMock.mockImplementation(async (url, options) => {
+      if (url === '/api/messages/read-all' && options?.method === 'POST') return jsonResponse({ updated: 1 });
+      if (url === '/api/messages/conversations') return jsonResponse(inbox);
+      if (url === '/api/messages/unread-count') return jsonResponse({ count: 0 });
+      return jsonResponse({}, 404);
+    });
+    renderMessages('/messages');
+    await screen.findByText('maria');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mark all messages as read' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/messages/read-all', { method: 'POST' });
+    });
+  });
+
+  it('exports the conversations to CSV', async () => {
+    fetchMock.mockImplementation(async (url) => {
+      if (url === '/api/messages/conversations/export') {
+        return new Response('With,Listing\nmaria,Loft\n', { headers: { 'Content-Type': 'text/csv' } });
+      }
+      if (url === '/api/messages/conversations') return jsonResponse(inbox);
+      if (url === '/api/messages/unread-count') return jsonResponse({ count: 0 });
+      return jsonResponse({}, 404);
+    });
+    renderMessages('/messages');
+    await screen.findByText('maria');
+    URL.createObjectURL = vi.fn(() => 'blob:mock');
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    await userEvent.click(screen.getByRole('button', { name: 'Export conversations' }));
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([url]) => url === '/api/messages/conversations/export')).toBe(true);
+    });
   });
 });

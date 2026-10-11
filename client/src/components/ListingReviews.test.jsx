@@ -96,4 +96,77 @@ describe('ListingReviews', () => {
     await screen.findByText('Great landlord!');
     expect(screen.queryByText(/after contacting its owner/)).not.toBeInTheDocument();
   });
+
+  it('lets a signed-in user mark a review helpful', async () => {
+    reviewsResponse = {
+      ...reviewsResponse,
+      reviews: [{ ...aliceReview, author: { _id: 'alice', username: 'alice' }, helpfulCount: 2, votedHelpful: false }],
+      viewer: { canReview: false, isOwner: false, ownReview: null },
+    };
+    fetchMock.mockImplementation(async (url) => {
+      if (String(url).endsWith('/helpful')) return jsonResponse({ helpfulCount: 3, voted: true });
+      return jsonResponse(reviewsResponse);
+    });
+    renderWithProviders(<ListingReviews listingId='l1' />, { currentUser: { _id: 'me' } });
+
+    await userEvent.click(await screen.findByRole('button', { name: /Helpful \(2\)/ }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/reviews/r1/helpful', { method: 'POST' });
+    });
+    expect(await screen.findByRole('button', { name: /Helpful \(3\)/ })).toBeInTheDocument();
+  });
+
+  it('lets the owner reply to a review', async () => {
+    reviewsResponse = {
+      ...reviewsResponse,
+      reviews: [{ ...aliceReview, author: { _id: 'alice', username: 'alice' }, helpfulCount: 0 }],
+      viewer: { canReview: false, isOwner: true, ownReview: null },
+    };
+    fetchMock.mockImplementation(async (url, options) => {
+      if (options?.method === 'PATCH') return jsonResponse({ _id: 'r1', ownerReply: 'Thanks!' });
+      return jsonResponse(reviewsResponse);
+    });
+    renderWithProviders(<ListingReviews listingId='l1' />, { currentUser: { _id: 'owner' } });
+
+    await userEvent.click(await screen.findByRole('button', { name: /Reply/ }));
+    await userEvent.type(screen.getByLabelText('Reply to review'), 'Thanks!');
+    await userEvent.click(screen.getByRole('button', { name: 'Post reply' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/reviews/r1/reply', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: 'Thanks!' }),
+      });
+    });
+  });
+
+  it('shows an existing owner reply', async () => {
+    reviewsResponse = {
+      ...reviewsResponse,
+      reviews: [{ ...aliceReview, ownerReply: 'Glad you liked it' }],
+      viewer: null,
+    };
+    renderWithProviders(<ListingReviews listingId='l1' />);
+
+    expect(await screen.findByText(/Glad you liked it/)).toBeInTheDocument();
+  });
+
+  it('reloads with the chosen sort order', async () => {
+    reviewsResponse = {
+      average: 4,
+      count: 2,
+      reviews: [aliceReview, { ...aliceReview, _id: 'r2', comment: 'Second review' }],
+      viewer: null,
+    };
+    renderWithProviders(<ListingReviews listingId='l1' />);
+    await screen.findByText('Great landlord!');
+
+    await userEvent.selectOptions(screen.getByLabelText('Sort reviews'), 'helpful');
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.map(([url]) => url)).toContain('/api/reviews/listing/l1?sort=helpful');
+    });
+  });
 });

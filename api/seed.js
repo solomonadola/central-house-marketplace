@@ -6,6 +6,8 @@ import Listing from './models/listing.model.js';
 import Conversation from './models/conversation.model.js';
 import Message from './models/message.model.js';
 import Review from './models/review.model.js';
+import Viewing from './models/viewing.model.js';
+import ListingViewDay, { utcDay } from './models/listingViewDay.model.js';
 import { updateListingRating } from './utils/ratings.js';
 dotenv.config();
 
@@ -121,7 +123,10 @@ const seed = async () => {
 
   const oldUsers = await User.find({ email: { $regex: `${SEED_DOMAIN}$` } });
   const oldIds = oldUsers.map((u) => u._id.toString());
+  const oldListingIds = await Listing.find({ userRef: { $in: oldIds } }).distinct('_id');
+  await ListingViewDay.deleteMany({ listing: { $in: oldListingIds } });
   await Review.deleteMany({ author: { $in: oldIds } });
+  await Viewing.deleteMany({ $or: [{ requester: { $in: oldIds } }, { owner: { $in: oldIds } }] });
   const oldConversations = await Conversation.find({ 'participants.user': { $in: oldIds } }).distinct('_id');
   await Message.deleteMany({ conversation: { $in: oldConversations } });
   await Conversation.deleteMany({ _id: { $in: oldConversations } });
@@ -167,6 +172,31 @@ const seed = async () => {
   );
   const createdListings = await Listing.insertMany(docs);
 
+  // 30 days of view history per listing for the analytics page. A simple
+  // seeded generator keeps it the same on every run; weekends get more
+  // views, and listings with offers are a bit more popular.
+  let seedState = 42;
+  const random = () => {
+    seedState = (seedState * 1103515245 + 12345) % 2147483648;
+    return seedState / 2147483648;
+  };
+  const viewDays = [];
+  for (const [i, listing] of createdListings.entries()) {
+    const popularity = (listing.offer ? 6 : 3) + (i % 5);
+    let total = 0;
+    for (let ago = 29; ago >= 0; ago -= 1) {
+      const date = new Date(now - ago * 24 * 60 * 60 * 1000);
+      const weekend = [0, 6].includes(date.getUTCDay()) ? 1.6 : 1;
+      const count = Math.round(popularity * weekend * (0.4 + random()));
+      total += count;
+      if (count > 0) viewDays.push({ listing: listing._id, day: utcDay(date), count });
+    }
+    // Plus some views from before the last 30 days.
+    listing.views = total + Math.round(popularity * 20 * random());
+  }
+  await ListingViewDay.insertMany(viewDays);
+  await Promise.all(createdListings.map((l) => Listing.updateOne({ _id: l._id }, { views: l.views })));
+
   for (const [buyerIndex, listingIndex, thread, readByBoth = false] of conversations) {
     const buyer = createdUsers[buyerIndex]._id;
     const listing = createdListings[listingIndex];
@@ -211,6 +241,31 @@ const seed = async () => {
     });
     await updateListingRating(createdListings[listingIndex]._id);
   }
+
+  // Sample viewings: a pending request on Sarah's listing, and one Sarah
+  // made that Maria accepted. Times are at 10:00 / 17:30 a few days out.
+  const atHour = (daysAhead, hours, minutes = 0) => {
+    const d = new Date(now + daysAhead * 24 * 60 * 60 * 1000);
+    d.setHours(hours, minutes, 0, 0);
+    return d;
+  };
+  await Viewing.insertMany([
+    {
+      listing: createdListings[0]._id,
+      requester: createdUsers[1]._id,
+      owner: createdUsers[0]._id,
+      startsAt: atHour(3, 10),
+      note: 'Mornings work best for me.',
+    },
+    {
+      listing: createdListings[2]._id,
+      requester: createdUsers[0]._id,
+      owner: createdUsers[2]._id,
+      startsAt: atHour(5, 17, 30),
+      status: 'accepted',
+      responseNote: 'See you then! Park in the driveway.',
+    },
+  ]);
 
   console.log(
     `Created ${createdUsers.length} demo users, ${docs.length} listings, ` +

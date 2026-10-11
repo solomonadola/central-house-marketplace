@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AMENITIES, PROPERTY_TYPES } from '../constants/listing.js';
 
 // Form inputs arrive as strings, so numeric fields are coerced.
 const count = (label) =>
@@ -58,6 +59,13 @@ export const updateUserSchema = z.object({
   avatar: optional(httpUrl('Avatar must be a URL')),
 });
 
+export const updatePreferencesSchema = z
+  .object({
+    emailNotifications: z.boolean({ invalid_type_error: 'Must be true or false' }).optional(),
+    marketingEmails: z.boolean({ invalid_type_error: 'Must be true or false' }).optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, { message: 'Nothing to update' });
+
 const listingFields = {
   name: z.string().trim().min(10, 'Name must be at least 10 characters').max(62, 'Name must be at most 62 characters'),
   description: z.string().trim().min(1, 'Description is required').max(5000),
@@ -70,6 +78,12 @@ const listingFields = {
   parking: z.boolean(),
   type: z.enum(['rent', 'sale'], { message: "Type must be 'rent' or 'sale'" }),
   offer: z.boolean(),
+  propertyType: z.enum(PROPERTY_TYPES, { message: 'Please choose a property type' }).optional().default('apartment'),
+  amenities: z
+    .array(z.enum(AMENITIES, { message: 'Unknown amenity' }))
+    .max(20, 'Too many amenities')
+    .optional()
+    .default([]),
   imageUrls: z
     .array(httpUrl('Image must be a URL'))
     .min(1, 'You must upload at least one image')
@@ -91,6 +105,10 @@ export const createListingSchema = z.object(listingFields).refine(...discountRul
 
 // Updates may send any subset of fields.
 export const updateListingSchema = z.object(listingFields).partial().refine(...discountRule);
+
+export const setListingActiveSchema = z.object({
+  active: z.boolean({ invalid_type_error: 'Active must be true or false' }),
+});
 
 const messageBody = z
   .string({ required_error: 'Message is required' })
@@ -121,8 +139,15 @@ export const reviewSchema = z.object({
   comment: z.string().trim().max(1000, 'Review must be at most 1000 characters').optional().default(''),
 });
 
-export const reportSchema = z.object({
-  listingId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid listing id'),
+export const reviewReplySchema = z.object({
+  comment: z
+    .string({ required_error: 'Reply is required' })
+    .trim()
+    .min(1, 'Reply cannot be empty')
+    .max(1000, 'Reply must be at most 1000 characters'),
+});
+
+export const reportSchema = z.object({  listingId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid listing id'),
   reason: z.enum(['scam', 'inaccurate', 'inappropriate', 'unavailable', 'other'], {
     errorMap: () => ({ message: 'Please choose a reason' }),
   }),
@@ -153,3 +178,133 @@ export const updateReportSchema = z.object({
 });
 
 export const moderationReasonSchema = z.object({ reason: moderationReason });
+
+const MAX_VIEWING_DAYS_AHEAD = 90;
+
+const isTimeZone = (tz) => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const createViewingSchema = z.object({
+  listingId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid listing id'),
+  startsAt: z.coerce
+    .date({ errorMap: () => ({ message: 'Please choose a valid date and time' }) })
+    .refine((d) => d > new Date(), 'Please choose a time in the future')
+    .refine(
+      (d) => d < new Date(Date.now() + MAX_VIEWING_DAYS_AHEAD * 24 * 60 * 60 * 1000),
+      `Viewings can be requested up to ${MAX_VIEWING_DAYS_AHEAD} days ahead`
+    ),
+  timeZone: z.string().refine(isTimeZone, 'Invalid time zone').optional().default('UTC'),
+  note: z.string().trim().max(500, 'Note must be at most 500 characters').optional().default(''),
+});
+
+export const updateViewingSchema = z.object({
+  action: z.enum(['accept', 'decline', 'cancel'], {
+    errorMap: () => ({ message: "Action must be 'accept', 'decline' or 'cancel'" }),
+  }),
+  note: z.string().trim().max(500, 'Note must be at most 500 characters').optional().default(''),
+});
+
+// An optional numeric range filter; an empty string from a cleared form
+// field is treated as "not set" rather than as zero.
+const optionalFilterNumber = z.preprocess(
+  (v) => (v === '' || v === null ? undefined : v),
+  z.coerce
+    .number({ invalid_type_error: 'Filter values must be numbers' })
+    .min(0, 'Filter values cannot be negative')
+    .max(10_000_000, 'Filter values are too large')
+    .optional()
+);
+
+export const createSavedSearchSchema = z
+  .object({
+    name: z.string().trim().max(60, 'Name must be at most 60 characters').optional().default(''),
+    searchTerm: z.string().trim().max(100, 'Keyword must be at most 100 characters').optional().default(''),
+    type: z.enum(['all', 'rent', 'sale']).optional().default('all'),
+    parking: z.boolean().optional().default(false),
+    furnished: z.boolean().optional().default(false),
+    offer: z.boolean().optional().default(false),
+    propertyType: z.enum(PROPERTY_TYPES).optional().nullable().default(null),
+    amenities: z.array(z.enum(AMENITIES)).max(20).optional().default([]),
+    minPrice: optionalFilterNumber,
+    maxPrice: optionalFilterNumber,
+    minBedrooms: optionalFilterNumber,
+    minBathrooms: optionalFilterNumber,
+  })
+  .refine(
+    (data) => data.minPrice === undefined || data.maxPrice === undefined || data.minPrice <= data.maxPrice,
+    { message: 'Minimum price must be at most the maximum price', path: ['minPrice'] }
+  );
+
+export const updateSavedSearchSchema = z.object({
+  name: z.string().trim().max(60, 'Name must be at most 60 characters').optional(),
+  alertsEnabled: z.boolean().optional(),
+});
+
+// Availability slots an owner opens up for viewings. Each slot is a start
+// and end time; the controller rejects past or overlapping ones.
+export const createAvailabilitySchema = z.object({
+  slots: z
+    .array(
+      z.object({
+        startsAt: z.coerce.date({ errorMap: () => ({ message: 'Please choose a valid date and time' }) }),
+        endsAt: z.coerce.date({ errorMap: () => ({ message: 'Please choose a valid date and time' }) }),
+      })
+    )
+    .min(1, 'Add at least one slot')
+    .max(50, 'You can add at most 50 slots at once'),
+});
+
+const optionalDate = z.preprocess(
+  (v) => (v === '' || v === null ? undefined : v),
+  z.coerce.date({ errorMap: () => ({ message: 'Please choose a valid date' }) }).optional()
+);
+
+const optionalMoney = z.preprocess(
+  (v) => (v === '' || v === null ? undefined : v),
+  z.coerce.number({ invalid_type_error: 'Income must be a number' }).min(0, 'Income cannot be negative').max(100_000_000).optional()
+);
+
+export const createApplicationSchema = z.object({
+  listingId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid listing id'),
+  fullName: z.string().trim().min(3, 'Please enter your full name').max(80, 'Name must be at most 80 characters'),
+  email,
+  phone: z.string().trim().max(40, 'Phone must be at most 40 characters').optional().default(''),
+  message: z.string().trim().max(1000, 'Message must be at most 1000 characters').optional().default(''),
+  moveInDate: optionalDate,
+  occupants: z.coerce
+    .number({ invalid_type_error: 'Occupants must be a number' })
+    .int('Occupants must be a whole number')
+    .min(1, 'There must be at least 1 occupant')
+    .max(20, 'At most 20 occupants')
+    .optional()
+    .default(1),
+  income: optionalMoney,
+});
+
+export const updateApplicationSchema = z.object({
+  action: z.enum(['withdraw', 'review', 'approve', 'reject'], {
+    errorMap: () => ({ message: "Action must be 'withdraw', 'review', 'approve' or 'reject'" }),
+  }),
+  note: z.string().trim().max(500, 'Note must be at most 500 characters').optional().default(''),
+});
+
+export const createPaymentSchema = z.object({
+  applicationId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid application id'),
+  amount: z.coerce
+    .number({ invalid_type_error: 'Amount must be a number' })
+    .min(10, 'Deposit must be at least 10')
+    .max(10_000_000, 'Deposit is too large'),
+  currency: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z]{3}$/, 'Currency must be a 3-letter code')
+    .optional()
+    .default('USD'),
+});

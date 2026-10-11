@@ -6,6 +6,12 @@ import Conversation from '../models/conversation.model.js';
 import Message from '../models/message.model.js';
 import Review from '../models/review.model.js';
 import Report from '../models/report.model.js';
+import Viewing from '../models/viewing.model.js';
+import Application from '../models/application.model.js';
+import Payment from '../models/payment.model.js';
+import AvailabilitySlot from '../models/availabilitySlot.model.js';
+import Notification from '../models/notification.model.js';
+import ListingViewDay from '../models/listingViewDay.model.js';
 import { updateListingRating } from '../utils/ratings.js';
 import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
 import { sendVerificationEmail } from '../utils/emailVerification.js';
@@ -63,6 +69,7 @@ export const deleteUser = async (req, res, next) => {
     await User.findByIdAndDelete(req.params.id);
     const listingIds = await Listing.find({ userRef: req.params.id }).distinct('_id');
     await Listing.deleteMany({ _id: { $in: listingIds } });
+    await ListingViewDay.deleteMany({ listing: { $in: listingIds } });
     await User.updateMany(
       { favorites: { $in: listingIds } },
       { $pull: { favorites: { $in: listingIds } } }
@@ -73,6 +80,11 @@ export const deleteUser = async (req, res, next) => {
     const reviewedListings = await Review.find({ author: req.params.id }).distinct('listing');
     await Review.deleteMany({ author: req.params.id });
     await Report.deleteMany({ reporter: req.params.id });
+    await Viewing.deleteMany({ $or: [{ requester: req.params.id }, { owner: req.params.id }] });
+    await AvailabilitySlot.deleteMany({ owner: req.params.id });
+    await Application.deleteMany({ $or: [{ applicant: req.params.id }, { owner: req.params.id }] });
+    await Payment.deleteMany({ $or: [{ payer: req.params.id }, { payee: req.params.id }] });
+    await Notification.deleteMany({ recipient: req.params.id });
     await Promise.all(reviewedListings.map(updateListingRating));
     const conversationIds = await Conversation.find({ 'participants.user': req.params.id }).distinct('_id');
     await Message.deleteMany({ conversation: { $in: conversationIds } });
@@ -115,11 +127,49 @@ export const getUser = async (req, res, next) => {
   }
 };
 
-export const getFavorites = async (req, res, next) => {
+// Public profile for an owner: who they are, their rating and their active
+// listings. No auth required, so it can be linked to from a listing.
+export const getPublicProfile = async (req, res, next) => {
   try {
+    const user = await User.findById(req.params.id, 'username avatar role createdAt');
+    if (!user) return next(errorHandler(404, 'User not found!'));
+
+    const listings = await Listing.find(
+      { userRef: req.params.id, hidden: { $ne: true }, active: { $ne: false } },
+      'name imageUrls address regularPrice discountPrice offer bedrooms bathrooms parking furnished type ratingAverage ratingCount views createdAt'
+    )
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    const rated = listings.filter((l) => l.ratingCount > 0);
+    const reviewCount = rated.reduce((sum, l) => sum + l.ratingCount, 0);
+    const reviewTotal = rated.reduce((sum, l) => sum + l.ratingAverage * l.ratingCount, 0);
+
+    res.status(200).json({
+      user: {
+        _id: user._id,
+        username: user.username,
+        avatar: user.avatar,
+        role: user.role,
+        memberSince: user.createdAt,
+      },
+      rating: {
+        average: reviewCount ? Math.round((reviewTotal / reviewCount) * 100) / 100 : 0,
+        count: reviewCount,
+      },
+      listingCount: listings.length,
+      listings,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getFavorites = async (req, res, next) => {  try {
     const user = await User.findById(req.user.id).populate({
       path: 'favorites',
-      match: { hidden: { $ne: true } },
+      match: { hidden: { $ne: true }, active: { $ne: false } },
     });
     if (!user) return next(errorHandler(404, 'User not found!'));
     // populate() leaves null for listings that were deleted or are hidden.
@@ -155,6 +205,39 @@ export const removeFavorite = async (req, res, next) => {
     );
     if (!user) return next(errorHandler(404, 'User not found!'));
     res.status(200).json({ favorites: user.favorites });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const PREFERENCE_FIELDS = ['emailNotifications', 'marketingEmails'];
+
+export const getPreferences = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id, PREFERENCE_FIELDS.join(' '));
+    if (!user) return next(errorHandler(404, 'User not found!'));
+    res.status(200).json({
+      emailNotifications: user.emailNotifications,
+      marketingEmails: user.marketingEmails,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePreferences = async (req, res, next) => {
+  try {
+    const update = Object.fromEntries(
+      PREFERENCE_FIELDS.filter((field) => req.body[field] !== undefined).map((field) => [field, req.body[field]])
+    );
+    const user = await User.findByIdAndUpdate(req.user.id, update, { new: true, runValidators: true }).select(
+      PREFERENCE_FIELDS.join(' ')
+    );
+    if (!user) return next(errorHandler(404, 'User not found!'));
+    res.status(200).json({
+      emailNotifications: user.emailNotifications,
+      marketingEmails: user.marketingEmails,
+    });
   } catch (error) {
     next(error);
   }

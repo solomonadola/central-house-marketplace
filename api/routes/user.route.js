@@ -8,11 +8,15 @@ import {
   getFavorites,
   addFavorite,
   removeFavorite,
+  getPreferences,
+  updatePreferences,
+  getPublicProfile,
 } from '../controllers/user.controller.js';
+import { exportMyAnalytics, getMyAnalytics } from '../controllers/analytics.controller.js';
 import { verifyToken } from '../utils/verifyUser.js';
 import { validateObjectId } from '../utils/validateObjectId.js';
 import { validate } from '../validation/validate.js';
-import { updateUserSchema } from '../validation/schemas.js';
+import { updatePreferencesSchema, updateUserSchema } from '../validation/schemas.js';
 
 
 const router = express.Router();
@@ -23,9 +27,15 @@ router.get('/test', test);
 router.post('/update/:id', verifyToken, validate(updateUserSchema), updateUser)
 router.delete('/delete/:id', verifyToken, deleteUser)
 router.get('/listings/:id', verifyToken, getUserListings)
+router.get('/analytics', verifyToken, getMyAnalytics)
+router.get('/analytics/export', verifyToken, exportMyAnalytics)
 router.get('/favorites', verifyToken, getFavorites)
 router.put('/favorites/:id', verifyToken, addFavorite)
 router.delete('/favorites/:id', verifyToken, removeFavorite)
+router.get('/preferences', verifyToken, getPreferences)
+router.patch('/preferences', verifyToken, validate(updatePreferencesSchema), updatePreferences)
+// Public: a seller's profile and active listings.
+router.get('/public/:id', getPublicProfile)
 // Must stay last: '/:id' would otherwise match '/favorites'.
 router.get('/:id', verifyToken, getUser)
 

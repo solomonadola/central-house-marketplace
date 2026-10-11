@@ -63,7 +63,7 @@ export default function ReportListing({ listingId }) {
   }
 
   return (
-    <form onSubmit={submit} className='flex flex-col gap-2 border rounded-lg p-3'>
+    <form onSubmit={submit} className='card flex flex-col gap-3 p-4'>
       <fieldset className='flex flex-col gap-1'>
         <legend className='font-semibold text-slate-700 mb-1'>Why are you reporting this listing?</legend>
         {REASONS.map(([value, label]) => (
@@ -86,18 +86,18 @@ export default function ReportListing({ listingId }) {
         rows={2}
         placeholder='Anything else we should know? (optional)'
         aria-label='Report details'
-        className='border rounded-lg p-2'
+        className='input'
       />
       {error && <p className='text-sm text-red-700'>{error}</p>}
       <div className='flex gap-3'>
         <button
           type='submit'
           disabled={sending}
-          className='bg-red-700 text-white px-4 py-2 rounded-lg uppercase disabled:opacity-60'
+          className='btn-danger'
         >
           {sending ? 'Sending...' : 'Send report'}
         </button>
-        <button type='button' onClick={() => setOpen(false)} className='text-slate-600 hover:underline'>
+        <button type='button' onClick={() => setOpen(false)} className='btn-ghost'>
           Cancel
         </button>
       </div>

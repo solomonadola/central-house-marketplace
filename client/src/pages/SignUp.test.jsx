@@ -22,10 +22,10 @@ describe('sign up', () => {
       { route: '/sign-up' }
     );
 
-    await userEvent.type(screen.getByPlaceholderText('username'), 'newbie');
-    await userEvent.type(screen.getByPlaceholderText('email'), 'newbie@example.com');
-    await userEvent.type(screen.getByPlaceholderText('password'), 'longenough');
-    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+    await userEvent.type(screen.getByLabelText('Username'), 'newbie');
+    await userEvent.type(screen.getByLabelText('Email'), 'newbie@example.com');
+    await userEvent.type(screen.getByLabelText('Password'), 'longenough');
+    await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
 
     expect(await screen.findByText(/We sent you a link to confirm your email/)).toBeInTheDocument();
   });

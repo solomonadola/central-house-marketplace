@@ -2,9 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-body{
-    background-color: rgb(241, 245, 241);
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-slate-50 text-slate-800;
+  }
+  /* A clear focus ring for keyboard users everywhere. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-white;
+  }
 }
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-700;
+  }
+  .btn-secondary {
+    @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+  }
+  .btn-ghost {
+    @apply btn text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700;
+  }
+
+  .label {
+    @apply mb-1 block text-sm font-medium text-slate-700;
+  }
+  .input {
+    @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20;
+  }
+
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-card;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .page-title {
+    @apply text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl;
+  }
+}
+
 /* Price tag markers on listing maps */
 .listing-price-marker {
   display: inline-block;
@@ -12,9 +63,27 @@ body{
   white-space: nowrap;
   padding: 2px 8px;
   border-radius: 9999px;
-  background: #334155;
+  background: #2a78d6;
   color: #fff;
   font-size: 12px;
   font-weight: 600;
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.3);
+}
+
+/* Listing photo gallery: white arrows and a photo counter on the image. */
+.listing-gallery {
+  --swiper-navigation-color: #fff;
+  --swiper-navigation-size: 28px;
+}
+.listing-gallery .swiper-pagination-fraction {
+  left: auto;
+  right: 12px;
+  bottom: 12px;
+  width: auto;
+  border-radius: 9999px;
+  background: rgb(15 23 42 / 0.7);
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
 }

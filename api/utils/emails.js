@@ -35,3 +35,14 @@ export const verifyEmailEmail = ({ username, url }) => {
     html: layout(lines, { url, label: 'Confirm email' }),
   };
 };
+
+// A generic "something happened" email, used by the notification service
+// for events like a new message, an accepted viewing or a review.
+export const notificationEmail = ({ username, title, body, url, label = 'Open Central House Marketplace' }) => {
+  const lines = [`Hi ${username},`, title, ...(body ? [body] : [])];
+  return {
+    subject: title,
+    text: `${lines.join('\n\n')}\n\n${label}: ${url}`,
+    html: layout(lines, { url, label }),
+  };
+};

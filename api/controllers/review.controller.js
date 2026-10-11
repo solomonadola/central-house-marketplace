@@ -1,8 +1,10 @@
 import Review from '../models/review.model.js';
 import Listing from '../models/listing.model.js';
+import User from '../models/user.model.js';
 import Conversation from '../models/conversation.model.js';
 import { errorHandler } from '../utils/error.js';
 import { updateListingRating } from '../utils/ratings.js';
+import { notifyNewReview } from '../utils/notifications.js';
 
 // Only people who contacted the owner about a listing can review it, so
 // every review comes from someone who actually got in touch.
@@ -14,26 +16,46 @@ export const getListingReviews = async (req, res, next) => {
     const listing = await Listing.findById(req.params.id, 'userRef ratingAverage ratingCount');
     if (!listing) return next(errorHandler(404, 'Listing not found!'));
 
+    const sortParam = req.query.sort;
+    const sort =
+      sortParam === 'helpful'
+        ? { helpfulCount: -1, createdAt: -1 }
+        : sortParam === 'rating_high'
+          ? { rating: -1, createdAt: -1 }
+          : sortParam === 'rating_low'
+            ? { rating: 1, createdAt: -1 }
+            : { createdAt: -1 };
+
     const reviews = await Review.find({ listing: listing._id })
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .limit(100)
       .populate('author', 'username avatar');
 
-    // Signed-in users also learn whether they can review and see their own review.
+    // Signed-in users also learn whether they can review, see their own
+    // review, and which reviews they've marked helpful.
+    const helpfulIds = new Set(
+      reviews.filter((r) => r.helpfulBy?.some((u) => u.toString() === req.user?.id)).map((r) => r._id.toString())
+    );
+    const shaped = reviews.map((r) => ({
+      ...r.toObject(),
+      helpfulBy: undefined,
+      votedHelpful: helpfulIds.has(r._id.toString()),
+    }));
+
     let viewer = null;
     if (req.user) {
       const isOwner = listing.userRef === req.user.id;
       viewer = {
         canReview: !isOwner && Boolean(await hasContactedOwner(listing._id, req.user.id)),
         isOwner,
-        ownReview: reviews.find((r) => r.author?._id.toString() === req.user.id) ?? null,
+        ownReview: shaped.find((r) => r.author?._id.toString() === req.user.id) ?? null,
       };
     }
 
     res.status(200).json({
       average: listing.ratingAverage,
       count: listing.ratingCount,
-      reviews,
+      reviews: shaped,
       viewer,
     });
   } catch (error) {
@@ -44,7 +66,7 @@ export const getListingReviews = async (req, res, next) => {
 // Creates the user's review of a listing, or updates it if one exists.
 export const upsertReview = async (req, res, next) => {
   try {
-    const listing = await Listing.findById(req.params.id, 'userRef');
+    const listing = await Listing.findById(req.params.id, 'userRef name');
     if (!listing) return next(errorHandler(404, 'Listing not found!'));
     if (listing.userRef === req.user.id) {
       return next(errorHandler(400, "You can't review your own listing!"));
@@ -61,6 +83,18 @@ export const upsertReview = async (req, res, next) => {
     ).populate('author', 'username avatar');
 
     await updateListingRating(listing._id);
+
+    if (!existing) {
+      const author = await User.findById(req.user.id, 'username');
+      await notifyNewReview({
+        recipient: listing.userRef,
+        authorName: author?.username ?? 'Someone',
+        rating: review.rating,
+        listingName: listing.name,
+        listingId: listing._id,
+      });
+    }
+
     res.status(existing ? 200 : 201).json(review);
   } catch (error) {
     next(error);
@@ -90,6 +124,53 @@ export const getOwnerRating = async (req, res, next) => {
     const count = listings.reduce((sum, l) => sum + l.ratingCount, 0);
     const total = listings.reduce((sum, l) => sum + l.ratingAverage * l.ratingCount, 0);
     res.status(200).json({ average: count ? Math.round((total / count) * 100) / 100 : 0, count });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Toggles the caller's "helpful" vote on someone else's review.
+export const toggleHelpful = async (req, res, next) => {
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) return next(errorHandler(404, 'Review not found!'));
+    if (review.author.toString() === req.user.id) {
+      return next(errorHandler(400, "You can't mark your own review as helpful."));
+    }
+
+    const index = review.helpfulBy.findIndex((u) => u.toString() === req.user.id);
+    let voted;
+    if (index === -1) {
+      review.helpfulBy.push(req.user.id);
+      voted = true;
+    } else {
+      review.helpfulBy.splice(index, 1);
+      voted = false;
+    }
+    review.helpfulCount = review.helpfulBy.length;
+    await review.save();
+
+    res.status(200).json({ helpfulCount: review.helpfulCount, voted });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// The listing owner's public reply to a review.
+export const replyToReview = async (req, res, next) => {
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) return next(errorHandler(404, 'Review not found!'));
+    const listing = await Listing.findById(review.listing, 'userRef');
+    if (!listing) return next(errorHandler(404, 'Listing not found!'));
+    if (listing.userRef !== req.user.id) {
+      return next(errorHandler(403, 'Only the listing owner can reply to a review.'));
+    }
+
+    review.ownerReply = req.body.comment;
+    review.ownerRepliedAt = new Date();
+    await review.save();
+    res.status(200).json(review);
   } catch (error) {
     next(error);
   }

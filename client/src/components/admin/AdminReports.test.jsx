@@ -30,7 +30,10 @@ describe('AdminReports', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
   it('lists open reports with their details', async () => {
     renderWithProviders(<AdminReports />);
@@ -93,5 +96,19 @@ describe('AdminReports', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Reopen' }));
 
     expect(await screen.findByText(/already has an open report/)).toBeInTheDocument();
+  });
+
+  it('exports the reports to CSV', async () => {
+    renderWithProviders(<AdminReports />);
+    await screen.findByText('Suspicious Listing Here');
+    URL.createObjectURL = vi.fn(() => 'blob:mock');
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    await userEvent.click(screen.getByRole('button', { name: /Export CSV/ }));
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([url]) => url === '/api/admin/reports/export?status=open')).toBe(true);
+    });
   });
 });
