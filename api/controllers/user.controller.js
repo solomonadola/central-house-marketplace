@@ -2,6 +2,8 @@ import bcryptjs from 'bcryptjs';
 import User from '../models/user.model.js';
 import { errorHandler } from '../utils/error.js';
 import Listing from '../models/listing.model.js';
+import Conversation from '../models/conversation.model.js';
+import Message from '../models/message.model.js';
 import { clearAuthCookie } from '../utils/authCookie.js';
 
 export const test = (req, res) => {
@@ -50,6 +52,9 @@ export const deleteUser = async (req, res, next) => {
       { favorites: { $in: listingIds } },
       { $pull: { favorites: { $in: listingIds } } }
     );
+    const conversationIds = await Conversation.find({ 'participants.user': req.params.id }).distinct('_id');
+    await Message.deleteMany({ conversation: { $in: conversationIds } });
+    await Conversation.deleteMany({ _id: { $in: conversationIds } });
     clearAuthCookie(res);
     res.status(200).json('User has been deleted!');
   } catch (error) {

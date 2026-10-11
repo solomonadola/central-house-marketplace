@@ -147,3 +147,27 @@ describe('GET /api/messages/unread-count', () => {
     expect((await buyerAgent.get('/api/messages/unread-count')).body).toEqual({ count: 1 });
   });
 });
+
+describe('deleting data', () => {
+  it("removes a deleted account's conversations and messages", async () => {
+    const { buyer, buyerAgent, ownerAgent, start } = await setup();
+    await start('Hello');
+
+    await buyerAgent.delete(`/api/user/delete/${buyer._id}`).expect(200);
+
+    expect((await ownerAgent.get('/api/messages/conversations')).body).toEqual([]);
+    expect(await Message.countDocuments()).toBe(0);
+  });
+
+  it('keeps conversations about a deleted listing', async () => {
+    const { listing, buyerAgent, ownerAgent, start } = await setup();
+    const id = await start('Hello');
+
+    await ownerAgent.delete(`/api/listing/delete/${listing._id}`).expect(200);
+
+    const inbox = await buyerAgent.get('/api/messages/conversations');
+    expect(inbox.body).toHaveLength(1);
+    expect(inbox.body[0].listing).toBeNull();
+    expect((await buyerAgent.get(`/api/messages/conversations/${id}`)).body.messages).toHaveLength(1);
+  });
+});
