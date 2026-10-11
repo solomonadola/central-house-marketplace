@@ -42,4 +42,14 @@ describe('ListingItem', () => {
     renderItem({ imageUrls: [] });
     expect(screen.getByAltText('listing cover').getAttribute('src')).toMatch(/^https:\/\//);
   });
+
+  it('shows the rating when the listing has reviews', () => {
+    renderItem({ ratingAverage: 4.33, ratingCount: 3 });
+    expect(screen.getByLabelText('Rated 4.3 out of 5 from 3 reviews')).toHaveTextContent('4.3(3)');
+  });
+
+  it('hides the rating when there are no reviews', () => {
+    renderItem({ ratingAverage: 0, ratingCount: 0 });
+    expect(screen.queryByLabelText(/Rated/)).not.toBeInTheDocument();
+  });
 });
