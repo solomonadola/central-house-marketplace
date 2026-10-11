@@ -16,5 +16,12 @@ export default defineConfig(({ mode }) => {
     },
 
     plugins: [react()],
+
+    test: {
+      environment: 'jsdom',
+      setupFiles: ['./src/test/setup.js'],
+      // Real values aren't needed in tests; firebase.js only reads the key.
+      env: { VITE_FIREBASE_API_KEY: 'test-key' },
+    },
   };
 });
