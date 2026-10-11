@@ -18,6 +18,30 @@ Central House Marketplace is a platform where you can find houses for rent and s
 - Message listing owners in the app, with an inbox, unread badges and live updates (email addresses stay private)
 - Profile management with avatar upload
 
+## More things you can do
+
+- **Notifications** – an in-app inbox (bell menu) for messages, viewing and
+  application updates, reviews and moderation, with per-user email preferences
+  under *Notification settings*.
+- **Saved searches** – save the filters you care about and get notified when a
+  matching home is listed. Manage them on the *Saved searches* page.
+- **Applications** – apply to rent or buy a listing with your details; owners
+  review, approve or decline applications from the *Received* tab.
+- **Holding deposits** – once an application is approved, pay a refundable
+  deposit to reserve the home (a simulated payment flow). Owners can refund it.
+- **Viewing availability** – owners publish the times they can show a property;
+  visitors can only request those slots, and overlapping requests are blocked.
+- **Calendar export** – download your upcoming viewings as an `.ics` file.
+- **Comparison** – put up to four homes side by side on the *Compare* page.
+- **Owner analytics** – views, saves, enquiries, viewing requests, applications
+  and deposits received, with a CSV export.
+- **Market insights** – public, aggregate stats about listings and prices.
+- **Owner profiles** – a public page for each seller with their rating and
+  active listings, plus pause/resume for your own listings.
+- **Recently viewed** – a private, on-device history of homes you have opened.
+- **Admin tools** – a reports queue, user suspension, hidden listings, an audit
+  log of every moderation action and a per-user detail page.
+
 ## Tech stack
 
 | Layer    | Tools                                                                 |
@@ -220,7 +244,11 @@ Admin routes (🛡 admins only):
 | POST   | `/api/admin/users/:id/suspend` 🛡 | Suspend a user (`reason`) and hide their listings |
 | POST   | `/api/admin/users/:id/unsuspend` 🛡 | Reinstate a user and restore their listings |
 
-Search query parameters: `searchTerm`, `type` (`rent` / `sale` / `all`), `offer`, `parking`, `furnished` (`true` to require), `minPrice` / `maxPrice` (compared against the discounted price for offers), `minBedrooms`, `minBathrooms`, `sort` (`createdAt` / `regularPrice`), `order` (`asc` / `desc`), `limit` (1-50, default 9), `startIndex`. The response body is an array of listings; the `X-Total-Count` header gives the total number of matches.
+Search query parameters: `searchTerm`, `type` (`rent` / `sale` / `all`), `offer`, `parking`, `furnished` (`true` to require), `propertyType` (`apartment` / `house` / `studio` / `room` / `land`), `amenities` (comma-separated ids; the listing must have them all), `minPrice` / `maxPrice` (compared against the discounted price for offers), `minBedrooms`, `minBathrooms`, `sort` (`createdAt` / `regularPrice`), `order` (`asc` / `desc`), `limit` (1-50, default 9), `startIndex`. The response body is an array of listings; the `X-Total-Count` header gives the total number of matches.
+
+Listings also carry a `propertyType` and an `amenities` list. The shared
+vocabulary lives in `api/constants/listing.js` and is mirrored on the client in
+`client/src/utils/listingDetails.js`, so the two stay in step.
 
 ### Security
 
@@ -234,6 +262,61 @@ Search query parameters: `searchTerm`, `type` (`rent` / `sale` / `all`), `offer`
 - Only users who have messaged a listing's owner can review that listing.
 - Every authenticated request re-checks the account: suspended users are signed out immediately, and resetting a password signs out all sessions (changing it signs out other devices).
 - Security headers are set with `helmet`.
+
+## Testing
+
+- API suite: `npm test` (Vitest with `mongodb-memory-server`; one in-memory
+  database per test file, cleaned between tests).
+- Client suite: `npm test --prefix client` (Vitest + Testing Library, jsdom).
+- Client lint: `npm run lint --prefix client` (eslint, zero warnings allowed).
+
+Run all three after changing code.
+
+## Additional API routes
+
+Beyond the core routes above, the app exposes:
+
+| Method | Route | Description |
+| ------ | ----- | ----------- |
+| GET | `/api/listing/compare?ids=` 🔒 | Up to four listings by id, in order, for the compare page |
+| GET | `/api/listing/by-ids?ids=` | Up to twelve listings by id, for the recently-viewed page |
+| GET | `/api/listing/:id/similar` | Up to four similar listings by type and price |
+| POST | `/api/listing/:id/active` 🔒 | Pause or reactivate a listing (`active`) |
+| POST | `/api/listing/:id/duplicate` 🔒 | Clone a listing as an unpublished draft |
+| GET | `/api/listing/availability/:id` | An owner's open viewing slots for a listing |
+| GET | `/api/notifications` 🔒 | Your notification inbox (`?unread=true`) |
+| GET | `/api/notifications/unread-count` 🔒 | Unread notification count |
+| PATCH | `/api/notifications/:id/read` 🔒 | Mark one read (or `/unread`) |
+| POST | `/api/notifications/read-all` 🔒 | Mark everything read |
+| DELETE | `/api/notifications` 🔒 | Clear the inbox (`?read=true` for read ones only) |
+| GET | `/api/saved-searches` 🔒 | Your saved searches |
+| POST | `/api/saved-searches` 🔒 | Save the current filters; alerts you to new matches |
+| PATCH | `/api/saved-searches/:id` 🔒 | Rename or pause alerts |
+| DELETE | `/api/saved-searches/:id` 🔒 | Delete a saved search |
+| GET | `/api/availability/:listingId` | Upcoming viewing slots (open ones to everyone) |
+| POST | `/api/availability/:listingId` 🔒 | Owner adds viewing slots |
+| DELETE | `/api/availability/slot/:id` 🔒 | Owner removes an open slot |
+| GET | `/api/applications` 🔒 | Your applications (`?role=owner` for those received) |
+| POST | `/api/applications` 🔒 | Apply to rent or buy a listing |
+| PATCH | `/api/applications/:id` 🔒 | `review` / `approve` / `reject` (owner) or `withdraw` |
+| GET | `/api/applications/export` 🔒 | Applications received, as CSV |
+| GET | `/api/payments` 🔒 | Deposits you paid (`?role=payee` for those received) |
+| POST | `/api/payments` 🔒 | Start a holding deposit for an approved application |
+| POST | `/api/payments/:id/confirm\|cancel` 🔒 | Confirm/cancel a pending deposit |
+| POST | `/api/payments/:id/refund` 🔒 | Owner refunds a paid deposit |
+| GET | `/api/payments/export` 🔒 | Deposits, as CSV |
+| GET | `/api/user/preferences` 🔒 | Notification email preferences |
+| PATCH | `/api/user/preferences` 🔒 | Update notification preferences |
+| GET | `/api/user/public/:id` | Public owner profile, rating and active listings |
+| GET | `/api/user/analytics/export` 🔒 | Per-listing analytics, as CSV |
+| GET | `/api/viewings/export` 🔒 | Upcoming viewings as an `.ics` calendar file |
+| GET | `/api/messages/conversations/export` 🔒 | Your conversations, as CSV |
+| POST | `/api/messages/read-all` 🔒 | Mark every conversation read |
+| GET | `/api/admin/audit` 🛡 | Moderation audit trail (`?action=`, `?targetType=`, `?actor=`) |
+| GET | `/api/admin/audit/summary` 🛡 | Counts per moderation action |
+| GET | `/api/admin/users/:id` 🛡 | A user's profile, stats, listings and recent actions |
+| GET | `/api/admin/reports/export` 🛡 | Reports, as CSV |
+| GET | `/api/insights` | Public aggregate marketplace statistics |
 
 ## License
 
