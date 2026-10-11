@@ -82,10 +82,12 @@ export const getUser = async (req, res, next) => {
   
     if (!user) return next(errorHandler(404, 'User not found!'));
   
-    // Other users can call this, so leave out private fields.
-    const { password: pass, favorites, ...rest } = user._doc;
-  
-    res.status(200).json(rest);
+    // Other users can call this, so leave out private fields. Contact
+    // happens through in-app messages, so others don't need the email.
+    const { password: pass, favorites, email, ...rest } = user._doc;
+    const isSelf = req.user.id === req.params.id;
+
+    res.status(200).json(isSelf ? { ...rest, email } : rest);
   } catch (error) {
     next(error);
   }

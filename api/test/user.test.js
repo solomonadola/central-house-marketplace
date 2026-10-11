@@ -127,15 +127,25 @@ describe('GET /api/user/listings/:id', () => {
 });
 
 describe('GET /api/user/:id', () => {
-  it('returns a user without the password', async () => {
+  it("returns another user's public profile only", async () => {
     const user = await createUser();
     const agent = await signedInAgent(await createUser());
 
     const res = await agent.get(`/api/user/${user._id}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ username: user.username, email: user.email });
+    expect(res.body).toMatchObject({ username: user.username, avatar: user.avatar });
     expect(res.body).not.toHaveProperty('password');
+    expect(res.body).not.toHaveProperty('email');
+  });
+
+  it('includes the email when users look themselves up', async () => {
+    const user = await createUser();
+    const agent = await signedInAgent(user);
+
+    const res = await agent.get(`/api/user/${user._id}`);
+
+    expect(res.body.email).toBe(user.email);
   });
 
   it('requires sign-in', async () => {
