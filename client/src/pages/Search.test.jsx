@@ -108,6 +108,27 @@ describe('Search page', () => {
     expect(screen.queryByText('No listing found!')).not.toBeInTheDocument();
   });
 
+  it('switches to a map view and remembers the choice', async () => {
+    fetchMock.mockImplementation(async () =>
+      jsonResponse([
+        makeListing({ _id: 'a', regularPrice: 1500, location: { lat: 37.76, lng: -122.42 } }),
+        makeListing({ _id: 'b', name: 'Listing Without Location' }),
+      ])
+    );
+    const { container, unmount } = renderSearch();
+    await screen.findByText('Listing Without Location');
+
+    await userEvent.click(screen.getByRole('button', { name: 'map' }));
+
+    expect(container.querySelectorAll('.listing-price-marker')).toHaveLength(1);
+    expect(screen.queryByText('Listing Without Location')).not.toBeInTheDocument();
+    expect(screen.getByText(/1 listing\(s\) have no location/)).toBeInTheDocument();
+
+    unmount();
+    renderSearch();
+    expect(await screen.findByRole('button', { name: 'map' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('shows a message when nothing matches', async () => {
     fetchMock.mockImplementation(async () => jsonResponse([]));
     renderSearch('/search?minPrice=99999999');

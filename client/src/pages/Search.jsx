@@ -1,7 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ListingItem from '../components/ListingItem';
+import ListingsMap from '../components/ListingsMap';
 import { apiFetch } from '../utils/apiFetch';
+
+const VIEW_KEY = 'searchView';
+
+const readView = () => {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'map' ? 'map' : 'list';
+  } catch {
+    return 'list';
+  }
+};
 
 export default function Search() {
   const navigate = useNavigate();
@@ -25,6 +36,16 @@ export default function Search() {
   const [total, setTotal] = useState(0);
   const [error, setError] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [view, setView] = useState(readView);
+
+  const changeView = (next) => {
+    setView(next);
+    try {
+      localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      // Not remembering the choice is fine.
+    }
+  };
 
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
@@ -316,11 +337,28 @@ export default function Search() {
           <h1 className='text-3xl font-semibold text-slate-700'>
             Listing results:
           </h1>
-          {!loading && !error && total > 0 && (
-            <p className='text-slate-600'>
-              Showing {listings.length} of {total}
-            </p>
-          )}
+          <div className='flex items-center gap-4'>
+            {!loading && !error && total > 0 && (
+              <p className='text-slate-600'>
+                Showing {listings.length} of {total}
+              </p>
+            )}
+            <div className='flex rounded-lg border overflow-hidden' role='group' aria-label='Results view'>
+              {['list', 'map'].map((option) => (
+                <button
+                  key={option}
+                  type='button'
+                  onClick={() => changeView(option)}
+                  aria-pressed={view === option}
+                  className={`px-3 py-1 text-sm capitalize ${
+                    view === option ? 'bg-slate-700 text-white' : 'bg-white text-slate-700'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
         <div className='p-7 flex flex-wrap gap-4'>
           {error && (
@@ -337,8 +375,19 @@ export default function Search() {
             </p>
           )}
 
+          {!loading && view === 'map' && listings.length > 0 && (
+            <div className='w-full'>
+              <ListingsMap listings={listings} className='h-[600px]' />
+              {listings.some((l) => !l.location) && (
+                <p className='text-sm text-slate-500 mt-2'>
+                  {listings.filter((l) => !l.location).length} listing(s) have no location and aren&apos;t shown on the map.
+                </p>
+              )}
+            </div>
+          )}
+
           {!loading &&
-            listings &&
+            view === 'list' &&
             listings.map((listing) => (
               <ListingItem key={listing._id} listing={listing} />
             ))}
