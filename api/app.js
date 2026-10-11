@@ -5,6 +5,7 @@ import listingRouter from './routes/listing.route.js';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import path from 'path';
+import { errorHandler } from './utils/error.js';
 
 const __dirname = path.resolve();
 
@@ -33,6 +34,12 @@ app.use(cookieParser());
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
+
+// Unknown API routes get a JSON 404 instead of falling through to the
+// client's index.html below.
+app.use('/api', (req, res, next) => {
+  next(errorHandler(404, `Route not found: ${req.method} ${req.originalUrl}`));
+});
 
 app.use(express.static(path.join(__dirname, '/client/dist')));
 
