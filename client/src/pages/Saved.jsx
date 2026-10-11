@@ -35,7 +35,12 @@ export default function Saved() {
 
   return (
     <main className='max-w-6xl mx-auto p-3'>
-      <h1 className='text-3xl font-semibold text-slate-700 my-7'>Saved listings</h1>
+      <div className='flex flex-wrap items-center justify-between gap-2 my-7'>
+        <h1 className='text-3xl font-semibold text-slate-700'>Saved listings</h1>
+        <Link to='/saved-searches' className='text-sm font-medium text-blue-800 hover:underline'>
+          Saved searches
+        </Link>
+      </div>
       {loading && <p className='text-xl text-slate-700'>Loading...</p>}
       {error && <p className='text-xl text-red-700'>Could not load your saved listings.</p>}
       {!loading && !error && visible.length === 0 && (

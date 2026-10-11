@@ -20,7 +20,7 @@ import {
 } from '../redux/user/userSlice';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { FaCalendarAlt, FaChartBar, FaEnvelope, FaHeart, FaPlus, FaSignOutAlt } from 'react-icons/fa';
+import { FaCalendarAlt, FaChartBar, FaCog, FaEnvelope, FaFileAlt, FaHandHoldingUsd, FaHeart, FaHistory, FaPlus, FaSignOutAlt } from 'react-icons/fa';
 import { apiFetch } from '../utils/apiFetch';
 export default function Profile() {
   const fileRef = useRef(null);
@@ -176,11 +176,41 @@ export default function Profile() {
       console.log(error.message);
     }
   };
+
+  const handleToggleActive = async (listing) => {
+    try {
+      const res = await apiFetch(`/api/listing/${listing._id}/active`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: listing.active === false }),
+      });
+      const data = await res.json();
+      if (data.success === false) return;
+      setUserListings((prev) => prev.map((l) => (l._id === listing._id ? { ...l, active: data.active } : l)));
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
+  const handleDuplicate = async (listing) => {
+    try {
+      const res = await apiFetch(`/api/listing/${listing._id}/duplicate`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success === false) return;
+      handleShowListings();
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
   const quickLinks = [
     [FaChartBar, 'Listing analytics', '/analytics'],
     [FaCalendarAlt, 'Viewings', '/viewings'],
+    [FaFileAlt, 'Applications', '/applications'],
+    [FaHandHoldingUsd, 'Holding deposits', '/payments'],
     [FaHeart, 'Saved homes', '/saved'],
+    [FaHistory, 'Recently viewed', '/recently-viewed'],
     [FaEnvelope, 'Messages', '/messages'],
+    [FaCog, 'Notification settings', '/settings'],
   ];
 
   return (
@@ -314,8 +344,25 @@ export default function Profile() {
                         Hidden{listing.hiddenReason ? `: ${listing.hiddenReason}` : ''}
                       </p>
                     )}
+                    {listing.active === false && !listing.hidden && (
+                      <p className='text-xs font-semibold text-slate-500'>Paused</p>
+                    )}
                   </Link>
                   <div className='flex shrink-0 gap-1'>
+                    <button
+                      type='button'
+                      onClick={() => handleToggleActive(listing)}
+                      className='btn-ghost px-3 py-1.5 text-xs'
+                    >
+                      {listing.active === false ? 'Activate' : 'Pause'}
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => handleDuplicate(listing)}
+                      className='btn-ghost px-3 py-1.5 text-xs'
+                    >
+                      Duplicate
+                    </button>
                     <Link to={`/update-listing/${listing._id}`} className='btn-secondary px-3 py-1.5 text-xs'>
                       Edit
                     </Link>

@@ -55,4 +55,35 @@ describe('Profile page', () => {
     expect(window.confirm).toHaveBeenCalledWith(`Delete "My Garden Flat Listing"? This can't be undone.`);
     await waitFor(() => expect(screen.queryByText('My Garden Flat Listing')).not.toBeInTheDocument());
   });
+
+  it('pauses and reactivates a listing', async () => {
+    fetchMock.mockImplementation(async (url, options) => {
+      if (url === '/api/user/listings/u1') return jsonResponse([makeListing({ _id: 'l1', name: 'My Garden Flat Listing', active: true })]);
+      if (url === '/api/listing/l1/active') return jsonResponse({ _id: 'l1', active: Boolean(options.body && JSON.parse(options.body).active) });
+      return jsonResponse({});
+    });
+    renderWithProviders(<Profile />, { currentUser: user });
+    await screen.findByText('My Garden Flat Listing');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Pause' }));
+
+    expect(await screen.findByText('Paused')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Activate' })).toBeInTheDocument();
+  });
+
+  it('duplicates a listing', async () => {
+    fetchMock.mockImplementation(async (url) => {
+      if (url === '/api/user/listings/u1') return jsonResponse([makeListing({ _id: 'l1', name: 'My Garden Flat Listing' })]);
+      if (url === '/api/listing/l1/duplicate') return jsonResponse({ _id: 'l2', name: 'My Garden Flat Listing (copy)' }, 201);
+      return jsonResponse({});
+    });
+    renderWithProviders(<Profile />, { currentUser: user });
+    await screen.findByText('My Garden Flat Listing');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Duplicate' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/listing/l1/duplicate', { method: 'POST' });
+    });
+  });
 });
