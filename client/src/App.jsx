@@ -36,6 +36,7 @@ import AdminRoute from './components/AdminRoute';
 import OpenHousesPage from './pages/OpenHousesPage';
 import Maintenance from './pages/Maintenance';
 import MaintenanceDetail from './pages/MaintenanceDetail';
+import NotFound from './pages/NotFound';
 import AdminUserDetail from './components/admin/AdminUserDetail';
 
 export default function App() {
@@ -88,6 +89,7 @@ export default function App() {
           <Route path='/admin' element={<Admin />} />
           <Route path='/admin/user/:userId' element={<AdminUserDetail />} />
         </Route>
+        <Route path='*' element={<NotFound />} />
       </Routes>
       </ErrorBoundary>
       </div>
