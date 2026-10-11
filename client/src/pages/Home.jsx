@@ -13,37 +13,20 @@ export default function Home() {
   const [rentListings, setRentListings] = useState([]);
   SwiperCore.use([Navigation]);
   useEffect(() => {
-    const fetchOfferListings = async () => {
+    // Each section loads on its own so one failing request doesn't leave
+    // the other sections empty.
+    const load = async (query, setListings) => {
       try {
-        const res = await apiFetch('/api/listing/get?offer=true&limit=4');
+        const res = await apiFetch(`/api/listing/get?${query}`);
         const data = await res.json();
-        setOfferListings(data);
-        fetchRentListings();
+        if (Array.isArray(data)) setListings(data);
       } catch (error) {
         console.log(error);
       }
     };
-    const fetchRentListings = async () => {
-      try {
-        const res = await apiFetch('/api/listing/get?type=rent&limit=4');
-        const data = await res.json();
-        setRentListings(data);
-        fetchSaleListings();
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-    const fetchSaleListings = async () => {
-      try {
-        const res = await apiFetch('/api/listing/get?type=sale&limit=4');
-        const data = await res.json();
-        setSaleListings(data);
-      } catch (error) {
-        log(error);
-      }
-    };
-    fetchOfferListings();
+    load('offer=true&limit=4', setOfferListings);
+    load('type=rent&limit=4', setRentListings);
+    load('type=sale&limit=4', setSaleListings);
   }, []);
   return (
     <div>
