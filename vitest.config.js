@@ -10,6 +10,7 @@ export default defineConfig({
       NODE_ENV: 'test',
       JWT_SECRET: 'test-secret',
       AUTH_RATE_LIMIT: '1000',
+      VIEW_RATE_LIMIT: '1000',
     },
     // Starting the in-memory MongoDB binary can be slow on first run.
     hookTimeout: 60000,

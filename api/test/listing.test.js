@@ -187,3 +187,37 @@ describe('malformed ids', () => {
     expect(res.body.message).toBe('Invalid id!');
   });
 });
+
+describe('POST /api/listing/view/:id', () => {
+  it('counts a view without auth', async () => {
+    const listing = await createListing(await createUser());
+
+    await api().post(`/api/listing/view/${listing._id}`).expect(200);
+    const res = await api().post(`/api/listing/view/${listing._id}`).expect(200);
+
+    expect(res.body).toEqual({ views: 2 });
+    expect((await Listing.findById(listing._id)).views).toBe(2);
+  });
+
+  it('starts new listings at zero views', async () => {
+    const agent = await signedInAgent(await createUser());
+    const res = await agent.post('/api/listing/create').send(validListing());
+    expect(res.body.views).toBe(0);
+  });
+
+  it('does not let owners set the view count', async () => {
+    const user = await createUser();
+    const agent = await signedInAgent(user);
+
+    const created = await agent.post('/api/listing/create').send(validListing({ views: 9999 }));
+    const updated = await agent.post(`/api/listing/update/${created.body._id}`).send({ views: 9999 });
+
+    expect(created.body.views).toBe(0);
+    expect(updated.body.views).toBe(0);
+  });
+
+  it('returns 404 for a missing listing and 400 for a malformed id', async () => {
+    expect((await api().post('/api/listing/view/0123456789abcdef01234567')).status).toBe(404);
+    expect((await api().post('/api/listing/view/abc')).status).toBe(400);
+  });
+});

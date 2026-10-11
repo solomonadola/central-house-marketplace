@@ -54,6 +54,11 @@ const listingSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    views: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   { timestamps: true }
 );
