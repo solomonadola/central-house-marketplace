@@ -135,4 +135,29 @@ describe('Search page', () => {
 
     expect(await screen.findByText('No listing found!')).toBeInTheDocument();
   });
+
+  it('fills the property type and amenities filters from the URL', async () => {
+    renderSearch('/search?propertyType=house&amenities=garden,wifi');
+
+    expect(screen.getByLabelText('Property type')).toHaveValue('house');
+    expect(screen.getByRole('checkbox', { name: 'Garden' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Wi-Fi' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Pool' })).not.toBeChecked();
+    await screen.findByText('Bright Two-Bedroom Apartment');
+  });
+
+  it('adds amenities and property type to the URL on submit', async () => {
+    renderSearch();
+    await screen.findByText('Bright Two-Bedroom Apartment');
+
+    await userEvent.selectOptions(screen.getByLabelText('Property type'), 'studio');
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Garden' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+
+    await waitFor(() => {
+      const params = new URLSearchParams(screen.getByTestId('location').textContent);
+      expect(params.get('propertyType')).toBe('studio');
+      expect(params.get('amenities')).toBe('garden');
+    });
+  });
 });

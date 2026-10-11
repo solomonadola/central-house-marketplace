@@ -9,6 +9,9 @@ import { app } from '../firebase';
 import { useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../utils/apiFetch';
+import AmenitiesPicker from '../components/AmenitiesPicker';
+import { PROPERTY_TYPE_OPTIONS } from '../utils/listingDetails';
+import { makeCover, moveImage } from '../utils/reorderImages';
 
 export default function CreateListing() {
   const { currentUser } = useSelector((state) => state.user);
@@ -28,6 +31,8 @@ export default function CreateListing() {
     offer: false,
     parking: false,
     furnished: false,
+    propertyType: 'apartment',
+    amenities: [],
   });
   const [imageUploadError, setImageUploadError] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -135,6 +140,13 @@ export default function CreateListing() {
         [e.target.id]: e.target.value,
       });
     }
+
+    if (e.target.tagName === 'SELECT') {
+      setFormData({
+        ...formData,
+        [e.target.id]: e.target.value,
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -203,6 +215,27 @@ export default function CreateListing() {
             required
             onChange={handleChange}
             value={formData.address}
+          />
+          <div>
+            <label htmlFor='propertyType' className='block text-sm font-medium text-slate-600 mb-1'>
+              Property type
+            </label>
+            <select
+              id='propertyType'
+              className='border p-3 rounded-lg w-full'
+              onChange={handleChange}
+              value={formData.propertyType ?? 'apartment'}
+            >
+              {PROPERTY_TYPE_OPTIONS.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <AmenitiesPicker
+            value={formData.amenities ?? []}
+            onChange={(amenities) => setFormData((prev) => ({ ...prev, amenities }))}
           />
           <div className='flex gap-6 flex-wrap'>
             <div className='flex gap-2'>
@@ -362,6 +395,32 @@ export default function CreateListing() {
                   alt='listing image'
                   className='w-20 h-20 object-contain rounded-lg'
                 />
+                <div className='flex flex-col gap-1 text-sm'>
+                  <button
+                    type='button'
+                    disabled={index === 0}
+                    onClick={() => setFormData((prev) => ({ ...prev, imageUrls: moveImage(prev.imageUrls, index, 'up') }))}
+                    className='text-slate-600 hover:underline disabled:opacity-40'
+                  >
+                    Move up
+                  </button>
+                  <button
+                    type='button'
+                    disabled={index === formData.imageUrls.length - 1}
+                    onClick={() => setFormData((prev) => ({ ...prev, imageUrls: moveImage(prev.imageUrls, index, 'down') }))}
+                    className='text-slate-600 hover:underline disabled:opacity-40'
+                  >
+                    Move down
+                  </button>
+                  <button
+                    type='button'
+                    disabled={index === 0}
+                    onClick={() => setFormData((prev) => ({ ...prev, imageUrls: makeCover(prev.imageUrls, index) }))}
+                    className='text-slate-600 hover:underline disabled:opacity-40'
+                  >
+                    Make cover
+                  </button>
+                </div>
                 <button
                   type='button'
                   onClick={() => handleRemoveImage(index)}
