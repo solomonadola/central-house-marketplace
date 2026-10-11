@@ -56,7 +56,8 @@ export const listReports = async (req, res, next) => {
     let status = REPORT_STATUSES.includes(req.query.status) ? req.query.status : 'open';
     if (req.query.status === 'all') status = null;
     const reports = await Report.find(status ? { status } : {})
-      .sort({ createdAt: status === 'open' ? 1 : -1 })
+      // _id breaks ties between reports created in the same millisecond.
+      .sort({ createdAt: status === 'open' ? 1 : -1, _id: status === 'open' ? 1 : -1 })
       .limit(200)
       .populate('listing', 'name imageUrls hidden hiddenReason userRef')
       .populate('reporter', 'username avatar');

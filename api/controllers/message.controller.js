@@ -140,7 +140,7 @@ export const getConversation = async (req, res, next) => {
       conversation: conversation._id,
       ...(before && { createdAt: { $lt: before } }),
     })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .limit(PAGE_SIZE + 1);
 
     const hasMore = newestFirst.length > PAGE_SIZE;
