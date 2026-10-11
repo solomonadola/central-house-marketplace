@@ -4,6 +4,8 @@ import { errorHandler } from '../utils/error.js';
 import Listing from '../models/listing.model.js';
 import Conversation from '../models/conversation.model.js';
 import Message from '../models/message.model.js';
+import Review from '../models/review.model.js';
+import { updateListingRating } from '../utils/ratings.js';
 import { clearAuthCookie } from '../utils/authCookie.js';
 
 export const test = (req, res) => {
@@ -52,6 +54,12 @@ export const deleteUser = async (req, res, next) => {
       { favorites: { $in: listingIds } },
       { $pull: { favorites: { $in: listingIds } } }
     );
+    // Reviews on the deleted listings go with them; the user's reviews of
+    // other listings are removed and those ratings recalculated.
+    await Review.deleteMany({ listing: { $in: listingIds } });
+    const reviewedListings = await Review.find({ author: req.params.id }).distinct('listing');
+    await Review.deleteMany({ author: req.params.id });
+    await Promise.all(reviewedListings.map(updateListingRating));
     const conversationIds = await Conversation.find({ 'participants.user': req.params.id }).distinct('_id');
     await Message.deleteMany({ conversation: { $in: conversationIds } });
     await Conversation.deleteMany({ _id: { $in: conversationIds } });

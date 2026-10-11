@@ -106,3 +106,17 @@ export const startConversationSchema = z.object({
 export const sendMessageSchema = z.object({
   body: messageBody,
 });
+
+export const reviewSchema = z.object({
+  // Coerce form strings, but leave a missing rating missing so it's
+  // reported as required rather than as NaN.
+  rating: z.preprocess(
+    (v) => (v === undefined || v === '' ? undefined : Number(v)),
+    z
+      .number({ invalid_type_error: 'Rating must be a number', required_error: 'Rating is required' })
+      .int('Rating must be a whole number')
+      .min(1, 'Rating must be between 1 and 5')
+      .max(5, 'Rating must be between 1 and 5')
+  ),
+  comment: z.string().trim().max(1000, 'Review must be at most 1000 characters').optional().default(''),
+});
