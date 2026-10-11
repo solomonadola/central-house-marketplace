@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { apiFetch } from '../utils/apiFetch';
 import BlockUserButton from './BlockUserButton';
+import QuickReplyPicker from './QuickReplyPicker';
 import { formatTimeOfDay } from '../utils/formatTime';
 
 const DEFAULT_POLL_MS = 5_000;
@@ -194,6 +195,7 @@ export default function ConversationThread({ conversationId, onActivity, pollMs 
         <p className='border-t p-3 text-sm text-slate-500'>You can&apos;t message each other while one of you has blocked the other.</p>
       ) : (
       <form onSubmit={send} className='border-t p-3 flex gap-2 items-end'>
+        <QuickReplyPicker onPick={(text) => setBody((current) => (current ? `${current}\n${text}` : text))} />
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}

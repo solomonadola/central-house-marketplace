@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FaBell, FaEnvelopeOpenText } from 'react-icons/fa';
 import BlockedUsers from '../components/BlockedUsers';
+import QuickRepliesManager from '../components/QuickRepliesManager';
 import DownloadMyData from '../components/DownloadMyData';
 import { apiFetch } from '../utils/apiFetch';
 
@@ -109,6 +110,7 @@ export default function Settings() {
         </form>
       )}
 
+      <QuickRepliesManager />
       <BlockedUsers />
       <DownloadMyData />
     </main>
