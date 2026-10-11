@@ -105,6 +105,23 @@ const toInt = (value, fallback, min, max) => {
   return Math.min(Math.max(n, min), max);
 };
 
+// Optional numeric filter: undefined unless the value is a non-negative number.
+const optionalNumber = (value) => {
+  if (typeof value !== 'string' || value.trim() === '') return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
+};
+
+// The price a buyer actually pays: the discount price when there's an offer.
+const EFFECTIVE_PRICE = { $cond: ['$offer', '$discountPrice', '$regularPrice'] };
+
+const priceFilter = (min, max) => {
+  const conditions = [];
+  if (min !== undefined) conditions.push({ $gte: [EFFECTIVE_PRICE, min] });
+  if (max !== undefined) conditions.push({ $lte: [EFFECTIVE_PRICE, max] });
+  return conditions.length ? { $expr: { $and: conditions } } : {};
+};
+
 export const getListings = async (req, res, next) => {
   try {
     const { query } = req;
@@ -119,12 +136,18 @@ export const getListings = async (req, res, next) => {
     const sort = SORT_FIELDS.includes(query.sort) ? query.sort : 'createdAt';
     const order = query.order === 'asc' ? 'asc' : 'desc';
 
+    const minBedrooms = optionalNumber(query.minBedrooms);
+    const minBathrooms = optionalNumber(query.minBathrooms);
+
     const listings = await Listing.find({
       name: { $regex: escapeRegex(searchTerm), $options: 'i' },
       offer: booleanFilter(query.offer),
       furnished: booleanFilter(query.furnished),
       parking: booleanFilter(query.parking),
       type,
+      ...(minBedrooms !== undefined && { bedrooms: { $gte: minBedrooms } }),
+      ...(minBathrooms !== undefined && { bathrooms: { $gte: minBathrooms } }),
+      ...priceFilter(optionalNumber(query.minPrice), optionalNumber(query.maxPrice)),
     })
       .sort({ [sort]: order })
       .limit(limit)
