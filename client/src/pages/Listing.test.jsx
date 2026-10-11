@@ -48,6 +48,22 @@ describe('Listing page', () => {
     expect(viewCalls(fetchMock)).toHaveLength(0);
   });
 
+  it('shows a map when the listing has a location', async () => {
+    fetchMock.mockImplementation(async () =>
+      jsonResponse(makeListing({ location: { lat: 37.76, lng: -122.42 } }))
+    );
+    renderListing(null);
+
+    expect(await screen.findByRole('heading', { name: 'Location' })).toBeInTheDocument();
+  });
+
+  it('has no map without a location', async () => {
+    renderListing(null);
+
+    await screen.findByText(/Bright Two-Bedroom Apartment/);
+    expect(screen.queryByRole('heading', { name: 'Location' })).not.toBeInTheDocument();
+  });
+
   it('shows an error for a missing listing', async () => {
     fetchMock.mockImplementation(async () => jsonResponse({ success: false, message: 'Listing not found!' }, 404));
     renderListing(null);

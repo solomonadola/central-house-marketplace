@@ -16,6 +16,7 @@ import {
 } from 'react-icons/fa';
 import Contact from '../components/Contact';
 import FavoriteButton from '../components/FavoriteButton';
+import ListingsMap from '../components/ListingsMap';
 import { apiFetch } from '../utils/apiFetch';
 import { recordView } from '../utils/recordView';
 
@@ -163,6 +164,12 @@ export default function Listing() {
               </button>
             )}
             {contact && <Contact listing={listing} />}
+            {listing.location && (
+              <section className='mt-4'>
+                <h2 className='text-xl font-semibold text-slate-700 mb-2'>Location</h2>
+                <ListingsMap listings={[listing]} className='h-[350px]' />
+              </section>
+            )}
           </div>
         </div>
       )}
