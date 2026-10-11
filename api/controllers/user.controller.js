@@ -117,9 +117,12 @@ export const getUser = async (req, res, next) => {
 
 export const getFavorites = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).populate('favorites');
+    const user = await User.findById(req.user.id).populate({
+      path: 'favorites',
+      match: { hidden: { $ne: true } },
+    });
     if (!user) return next(errorHandler(404, 'User not found!'));
-    // populate() leaves null for listings that were deleted.
+    // populate() leaves null for listings that were deleted or are hidden.
     res.status(200).json(user.favorites.filter(Boolean));
   } catch (error) {
     next(error);

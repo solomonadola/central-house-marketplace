@@ -93,8 +93,8 @@ export const updateListing = async (req, res, next) => {
 
 export const recordView = async (req, res, next) => {
   try {
-    const listing = await Listing.findByIdAndUpdate(
-      req.params.id,
+    const listing = await Listing.findOneAndUpdate(
+      { _id: req.params.id, hidden: { $ne: true } },
       { $inc: { views: 1 } },
       { new: true, projection: { views: 1 } }
     );
@@ -108,7 +108,9 @@ export const recordView = async (req, res, next) => {
 export const getListing = async (req, res, next) => {
   try {
     const listing = await Listing.findById(req.params.id);
-    if (!listing) {
+    // Hidden listings look missing to everyone but their owner and admins.
+    const canSeeHidden = req.user && (req.user.id === listing?.userRef || req.user.role === 'admin');
+    if (!listing || (listing.hidden && !canSeeHidden)) {
       return next(errorHandler(404, 'Listing not found!'));
     }
     res.status(200).json(listing);
@@ -168,6 +170,7 @@ export const getListings = async (req, res, next) => {
     const minBathrooms = optionalNumber(query.minBathrooms);
 
     const filter = {
+      hidden: { $ne: true },
       name: { $regex: escapeRegex(searchTerm), $options: 'i' },
       offer: booleanFilter(query.offer),
       furnished: booleanFilter(query.furnished),

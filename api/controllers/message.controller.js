@@ -28,7 +28,7 @@ export const startConversation = async (req, res, next) => {
   try {
     const { listingId, body } = req.body;
     const listing = await Listing.findById(listingId);
-    if (!listing) return next(errorHandler(404, 'Listing not found!'));
+    if (!listing || listing.hidden) return next(errorHandler(404, 'Listing not found!'));
     if (listing.userRef === req.user.id) {
       return next(errorHandler(400, "You can't message yourself about your own listing!"));
     }

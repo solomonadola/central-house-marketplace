@@ -35,14 +35,23 @@ export const verifyToken = (req, res, next) => {
   });
 };
 
-// For public routes that show extra info to signed-in users: sets req.user
-// when a valid token is present, and carries on anonymously otherwise.
+// For public routes that show extra info to signed-in users: sets
+// req.user = { id, role } when a valid session is present, and carries on
+// anonymously otherwise (including for suspended or revoked sessions).
 export const optionalAuth = (req, res, next) => {
   const token = req.cookies.access_token;
   if (!token) return next();
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (!err) req.user = user;
-    next();
+  jwt.verify(token, process.env.JWT_SECRET, async (err, payload) => {
+    if (err) return next();
+    try {
+      const user = await User.findById(payload.id, 'role suspended +tokenVersion').lean();
+      if (user && !user.suspended && (payload.tv ?? 0) === (user.tokenVersion ?? 0)) {
+        req.user = { id: payload.id, role: user.role ?? 'user' };
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
   });
 };
