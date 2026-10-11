@@ -60,6 +60,9 @@ export default function SignIn() {
           id='password'
           onChange={handleChange}
         />
+        <Link to='/forgot-password' className='self-end text-sm text-blue-700 hover:underline'>
+          Forgot password?
+        </Link>
 
         <button
           disabled={loading}
@@ -70,7 +73,7 @@ export default function SignIn() {
         <OAuth/>
       </form>
       <div className='flex gap-2 mt-5'>
-        <p>Dont have an account?</p>
+        <p>Don&apos;t have an account?</p>
         <Link to={'/sign-up'}>
           <span className='text-blue-700'>Sign up</span>
         </Link>
