@@ -31,3 +31,17 @@ export const viewLimiter = rateLimit({
       message: 'Too many requests, please try again later.',
     }),
 });
+
+// Slows down message spam from a single IP.
+export const messageLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: Number(process.env.MESSAGE_RATE_LIMIT) || 30,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: (req, res, next, options) =>
+    res.status(options.statusCode).json({
+      success: false,
+      statusCode: options.statusCode,
+      message: 'You are sending messages too quickly. Please wait a moment.',
+    }),
+});

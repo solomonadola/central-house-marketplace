@@ -91,3 +91,18 @@ export const createListingSchema = z.object(listingFields).refine(...discountRul
 
 // Updates may send any subset of fields.
 export const updateListingSchema = z.object(listingFields).partial().refine(...discountRule);
+
+const messageBody = z
+  .string({ required_error: 'Message is required' })
+  .trim()
+  .min(1, 'Message cannot be empty')
+  .max(2000, 'Message must be at most 2000 characters');
+
+export const startConversationSchema = z.object({
+  listingId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid listing id'),
+  body: messageBody,
+});
+
+export const sendMessageSchema = z.object({
+  body: messageBody,
+});
