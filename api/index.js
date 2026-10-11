@@ -1,51 +1,33 @@
-import express from 'express';
+// Must be the first import so .env is loaded before other modules read it.
+import 'dotenv/config';
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import userRouter from './routes/user.route.js';
-import authRouter from './routes/auth.route.js';
-import listingRouter from './routes/listing.route.js';
-import cookieParser from 'cookie-parser';
-import path from 'path';
-dotenv.config();
 
+const missing = ['DB', 'JWT_SECRET'].filter((key) => !process.env[key]);
+if (missing.length) {
+  console.error(
+    `Missing required environment variables: ${missing.join(', ')}. ` +
+      'Copy .env.example to .env and fill them in.'
+  );
+  process.exit(1);
+}
+
+// Imported after the env check so modules that read config at load time
+// never see a half-configured environment.
+const { default: app } = await import('./app.js');
+
+const PORT = process.env.PORT || 3000;
+
+// Only accept requests once the database is reachable; a bad DB setting
+// should stop the server loudly rather than leave every request hanging.
 mongoose
-  .connect(process.env.DB)
+  .connect(process.env.DB, { serverSelectionTimeoutMS: 10000 })
   .then(() => {
     console.log('Connected to MongoDB!');
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}!`);
+    });
   })
   .catch((err) => {
-    console.log(err);
+    console.error('Could not connect to MongoDB:', err.message);
+    process.exit(1);
   });
-
-  const __dirname = path.resolve();
-
-const app = express();
-
-app.use(express.json());
-
-app.use(cookieParser());
-
-app.listen(3000, () => {
-  console.log('Server is running on port 3000!');
-});
-
-app.use('/api/user', userRouter);
-app.use('/api/auth', authRouter);
-app.use('/api/listing', listingRouter);
-
-
-app.use(express.static(path.join(__dirname, '/client/dist')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
-})
-
-app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-  return res.status(statusCode).json({
-    success: false,
-    statusCode,
-    message,
-  });
-});
