@@ -6,6 +6,7 @@ import About from './pages/About';
 import Profile from './pages/Profile';
 import Header from './components/Header';
 import VerifyEmailBanner from './components/VerifyEmailBanner';
+import Footer from './components/Footer';
 import PrivateRoute from './components/PrivateRoute';
 import CreateListing from './pages/CreateListing';
 import UpdateListing from './pages/UpdateListing';
@@ -24,8 +25,11 @@ import AdminRoute from './components/AdminRoute';
 export default function App() {
   return (
     <BrowserRouter>
+      {/* Column layout keeps the footer at the bottom on short pages. */}
+      <div className='flex min-h-screen flex-col'>
       <Header />
       <VerifyEmailBanner />
+      <div className='flex-1'>
       <Routes>
         <Route path='/' element={<Home />} />
         <Route path='/sign-in' element={<SignIn />} />
@@ -54,6 +58,9 @@ export default function App() {
           <Route path='/admin' element={<Admin />} />
         </Route>
       </Routes>
+      </div>
+      <Footer />
+      </div>
     </BrowserRouter>
   );
 }
