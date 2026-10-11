@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { apiFetch } from '../utils/apiFetch';
 import { formatTimeOfDay } from '../utils/formatTime';
 
-const POLL_MS = 5_000;
+const DEFAULT_POLL_MS = 5_000;
 
 // Combines message lists, dropping duplicates, oldest first.
 const mergeMessages = (...lists) => {
@@ -13,7 +13,8 @@ const mergeMessages = (...lists) => {
   return [...byId.values()].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 };
 
-export default function ConversationThread({ conversationId, onActivity }) {
+// pollMs is configurable mainly so tests can poll quickly with real timers.
+export default function ConversationThread({ conversationId, onActivity, pollMs = DEFAULT_POLL_MS }) {
   const { currentUser } = useSelector((state) => state.user);
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -66,12 +67,12 @@ export default function ConversationThread({ conversationId, onActivity }) {
     load(true);
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') load(false);
-    }, POLL_MS);
+    }, pollMs);
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [fetchLatest]);
+  }, [fetchLatest, pollMs]);
 
   // Follow new messages unless the user scrolled up to read older ones.
   useEffect(() => {
