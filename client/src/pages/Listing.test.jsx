@@ -41,6 +41,26 @@ describe('Listing page', () => {
     expect(screen.queryByText(/^\d+ views?$/)).not.toBeInTheDocument();
   });
 
+  it('asks signed-out visitors to sign in to contact the owner', async () => {
+    renderListing(null);
+
+    expect(await screen.findByRole('link', { name: 'Sign in to contact' })).toHaveAttribute('href', '/sign-in');
+    expect(screen.queryByRole('button', { name: 'Message the owner' })).not.toBeInTheDocument();
+  });
+
+  it('offers signed-in visitors messaging and viewings', async () => {
+    renderListing({ _id: 'visitor', favorites: [] });
+
+    expect(await screen.findByRole('button', { name: 'Message the owner' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Request a viewing/ })).toBeInTheDocument();
+  });
+
+  it('shows the owner an edit link', async () => {
+    renderListing({ _id: 'owner1', favorites: [] });
+
+    expect(await screen.findByRole('link', { name: /Edit listing/ })).toHaveAttribute('href', '/update-listing/listing1');
+  });
+
   it('does not record a view for the owner, and shows them the count', async () => {
     renderListing({ _id: 'owner1', favorites: [] });
 
@@ -83,6 +103,7 @@ describe('Listing page', () => {
     fetchMock.mockImplementation(async () => jsonResponse({ success: false, message: 'Listing not found!' }, 404));
     renderListing(null);
 
-    expect(await screen.findByText('Something went wrong!')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Listing not found' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Browse other homes' })).toHaveAttribute('href', '/search');
   });
 });
