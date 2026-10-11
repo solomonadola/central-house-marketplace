@@ -232,3 +232,13 @@ export const notifyQuestionAnswered = ({ recipient, listingId, listingName }) =>
     link: `/listing/${listingId}#questions`,
     meta: { listingId },
   });
+
+export const notifyOpenHouseCancelled = ({ recipients, listingId, listingName, when }) =>
+  notifyMany(recipients, {
+    type: 'open_house_cancelled',
+    title: 'An open house you planned to attend was cancelled',
+    body: `"${listingName}" on ${when}`,
+    link: `/listing/${listingId}`,
+    meta: { listingId },
+    email: true,
+  });

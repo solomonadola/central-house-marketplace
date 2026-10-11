@@ -324,3 +324,31 @@ export const answerQuestionSchema = z.object({
     .min(1, 'Answer cannot be empty')
     .max(1000, 'Answer must be at most 1000 characters'),
 });
+
+const MAX_OPEN_HOUSE_HOURS = 8;
+const MAX_OPEN_HOUSE_DAYS_AHEAD = 90;
+
+export const createOpenHouseSchema = z
+  .object({
+    startsAt: z.coerce
+      .date({ errorMap: () => ({ message: 'Please choose a valid start time' }) })
+      .refine((d) => d > new Date(), 'The open house must start in the future')
+      .refine(
+        (d) => d < new Date(Date.now() + MAX_OPEN_HOUSE_DAYS_AHEAD * 24 * 60 * 60 * 1000),
+        `Open houses can be scheduled up to ${MAX_OPEN_HOUSE_DAYS_AHEAD} days ahead`
+      ),
+    endsAt: z.coerce.date({ errorMap: () => ({ message: 'Please choose a valid end time' }) }),
+    note: z.string().trim().max(300, 'Note must be at most 300 characters').optional().default(''),
+    capacity: z.coerce
+      .number({ invalid_type_error: 'Capacity must be a number' })
+      .int('Capacity must be a whole number')
+      .min(0, 'Capacity cannot be negative')
+      .max(500, 'Capacity must be at most 500')
+      .optional()
+      .default(0),
+  })
+  .refine((v) => v.endsAt > v.startsAt, { message: 'The end time must be after the start time', path: ['endsAt'] })
+  .refine((v) => v.endsAt - v.startsAt <= MAX_OPEN_HOUSE_HOURS * 60 * 60 * 1000, {
+    message: `An open house can last at most ${MAX_OPEN_HOUSE_HOURS} hours`,
+    path: ['endsAt'],
+  });

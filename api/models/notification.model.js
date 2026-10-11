@@ -24,6 +24,7 @@ export const NOTIFICATION_TYPES = [
   'price_drop',
   'question_asked',
   'question_answered',
+  'open_house_cancelled',
 ];
 
 const notificationSchema = new mongoose.Schema(

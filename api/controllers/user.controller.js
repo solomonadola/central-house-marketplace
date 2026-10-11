@@ -14,6 +14,7 @@ import Notification from '../models/notification.model.js';
 import ListingViewDay from '../models/listingViewDay.model.js';
 import PriceChange from '../models/priceChange.model.js';
 import ListingQuestion from '../models/listingQuestion.model.js';
+import OpenHouse from '../models/openHouse.model.js';
 import { updateListingRating } from '../utils/ratings.js';
 import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
 import { sendVerificationEmail } from '../utils/emailVerification.js';
@@ -75,6 +76,8 @@ export const deleteUser = async (req, res, next) => {
     await PriceChange.deleteMany({ listing: { $in: listingIds } });
     // Questions on their listings, and questions they asked elsewhere.
     await ListingQuestion.deleteMany({ $or: [{ listing: { $in: listingIds } }, { asker: req.params.id }] });
+    await OpenHouse.deleteMany({ listing: { $in: listingIds } });
+    await OpenHouse.updateMany({ 'rsvps.user': req.params.id }, { $pull: { rsvps: { user: req.params.id } } });
     await User.updateMany(
       { favorites: { $in: listingIds } },
       { $pull: { favorites: { $in: listingIds } } }
