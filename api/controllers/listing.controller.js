@@ -87,45 +87,41 @@ export const getListing = async (req, res, next) => {
   }
 };
 
+// Only these values are accepted from the query string. Anything else
+// (including objects like ?type[$ne]=x) falls back to the default.
+const SORT_FIELDS = ['createdAt', 'regularPrice'];
+const MAX_LIMIT = 50;
+
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Boolean filters: 'true' restricts to true, anything else means "either".
+const booleanFilter = (value) => (value === 'true' ? true : { $in: [false, true] });
+
+const toInt = (value, fallback, min, max) => {
+  const n = Number.parseInt(value, 10);
+  if (Number.isNaN(n)) return fallback;
+  return Math.min(Math.max(n, min), max);
+};
+
 export const getListings = async (req, res, next) => {
   try {
-    const limit = parseInt(req.query.limit) || 9;
-    const startIndex = parseInt(req.query.startIndex) || 0;
-    let offer = req.query.offer;
+    const { query } = req;
 
-    if (offer === undefined || offer === 'false') {
-      offer = { $in: [false, true] };
-    }
+    const limit = toInt(query.limit, 9, 1, MAX_LIMIT);
+    const startIndex = toInt(query.startIndex, 0, 0, Number.MAX_SAFE_INTEGER);
 
-    let furnished = req.query.furnished;
+    const type = ['rent', 'sale'].includes(query.type) ? query.type : { $in: ['sale', 'rent'] };
 
-    if (furnished === undefined || furnished === 'false') {
-      furnished = { $in: [false, true] };
-    }
+    const searchTerm = typeof query.searchTerm === 'string' ? query.searchTerm.slice(0, 100) : '';
 
-    let parking = req.query.parking;
-
-    if (parking === undefined || parking === 'false') {
-      parking = { $in: [false, true] };
-    }
-
-    let type = req.query.type;
-
-    if (type === undefined || type === 'all') {
-      type = { $in: ['sale', 'rent'] };
-    }
-
-    const searchTerm = req.query.searchTerm || '';
-
-    const sort = req.query.sort || 'createdAt';
-
-    const order = req.query.order || 'desc';
+    const sort = SORT_FIELDS.includes(query.sort) ? query.sort : 'createdAt';
+    const order = query.order === 'asc' ? 'asc' : 'desc';
 
     const listings = await Listing.find({
-      name: { $regex: searchTerm, $options: 'i' },
-      offer,
-      furnished,
-      parking,
+      name: { $regex: escapeRegex(searchTerm), $options: 'i' },
+      offer: booleanFilter(query.offer),
+      furnished: booleanFilter(query.furnished),
+      parking: booleanFilter(query.parking),
       type,
     })
       .sort({ [sort]: order })
