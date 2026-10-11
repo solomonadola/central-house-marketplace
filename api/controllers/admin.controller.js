@@ -143,3 +143,66 @@ export const listHiddenListings = async (req, res, next) => {
     next(error);
   }
 };
+
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Users matching ?search= (username or email), newest first, with how
+// many listings each has.
+export const listUsers = async (req, res, next) => {
+  try {
+    const search = typeof req.query.search === 'string' ? req.query.search.trim().slice(0, 100) : '';
+    const pattern = { $regex: escapeRegex(search), $options: 'i' };
+    const filter = search ? { $or: [{ username: pattern }, { email: pattern }] } : {};
+    if (req.query.suspended === 'true') filter.suspended = true;
+
+    const users = await User.find(filter, 'username email avatar role suspended +suspendedReason emailVerified createdAt')
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    const counts = await Listing.aggregate([
+      { $match: { userRef: { $in: users.map((u) => u._id.toString()) } } },
+      { $group: { _id: '$userRef', count: { $sum: 1 } } },
+    ]);
+    const listingCounts = Object.fromEntries(counts.map((c) => [c._id, c.count]));
+
+    res.status(200).json(users.map((u) => ({ ...u, listingCount: listingCounts[u._id.toString()] ?? 0 })));
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Suspends a user: they're signed out everywhere (verifyToken checks the
+// flag) and their public listings are hidden until they're reinstated.
+export const suspendUser = async (req, res, next) => {
+  try {
+    if (req.params.id === req.user.id) return next(errorHandler(400, "You can't suspend yourself!"));
+    const target = await User.findById(req.params.id, 'role');
+    if (!target) return next(errorHandler(404, 'User not found!'));
+    if (target.role === 'admin') return next(errorHandler(400, "Admins can't be suspended. Remove their admin role first."));
+
+    await User.updateOne({ _id: target._id }, { suspended: true, suspendedReason: req.body.reason });
+    const { modifiedCount } = await Listing.updateMany(
+      { userRef: req.params.id, hidden: { $ne: true } },
+      { hidden: true, hiddenReason: 'Owner account suspended', hiddenBy: 'suspension' }
+    );
+    res.status(200).json({ suspended: true, listingsHidden: modifiedCount });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const unsuspendUser = async (req, res, next) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, { suspended: false, $unset: { suspendedReason: 1 } });
+    if (!user) return next(errorHandler(404, 'User not found!'));
+    // Restore only what the suspension hid, not listings a moderator hid.
+    const { modifiedCount } = await Listing.updateMany(
+      { userRef: req.params.id, hiddenBy: 'suspension' },
+      { hidden: false, hiddenReason: '', hiddenBy: null }
+    );
+    res.status(200).json({ suspended: false, listingsRestored: modifiedCount });
+  } catch (error) {
+    next(error);
+  }
+};

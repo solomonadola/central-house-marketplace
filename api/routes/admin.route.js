@@ -4,6 +4,9 @@ import {
   hideListing,
   listHiddenListings,
   listReports,
+  listUsers,
+  suspendUser,
+  unsuspendUser,
   unhideListing,
   updateReport,
 } from '../controllers/admin.controller.js';
@@ -24,5 +27,8 @@ router.patch('/reports/:id', validate(updateReportSchema), updateReport);
 router.get('/listings/hidden', listHiddenListings);
 router.post('/listings/:id/hide', validate(moderationReasonSchema), hideListing);
 router.post('/listings/:id/unhide', unhideListing);
+router.get('/users', listUsers);
+router.post('/users/:id/suspend', validate(moderationReasonSchema), suspendUser);
+router.post('/users/:id/unsuspend', unsuspendUser);
 
 export default router;

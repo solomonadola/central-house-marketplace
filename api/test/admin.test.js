@@ -151,3 +151,65 @@ describe('listing moderation', () => {
     expect((await user.post(`/api/admin/listings/${listing._id}/hide`).send({ reason: 'x' })).status).toBe(403);
   });
 });
+
+describe('user moderation', () => {
+  it('searches users by username or email with listing counts', async () => {
+    const sarah = await createUser({ username: 'sarah_homes', email: 'sarah@example.com' });
+    await createUser({ username: 'david', email: 'david@realty.example' });
+    await createListing(sarah);
+    await createListing(sarah);
+    const agent = await adminAgent();
+
+    const byName = await agent.get('/api/admin/users?search=SARAH');
+    const byEmail = await agent.get('/api/admin/users?search=realty');
+
+    expect(byName.body).toHaveLength(1);
+    expect(byName.body[0]).toMatchObject({ username: 'sarah_homes', email: 'sarah@example.com', listingCount: 2 });
+    expect(byName.body[0]).not.toHaveProperty('password');
+    expect(byEmail.body.map((u) => u.username)).toEqual(['david']);
+    expect((await agent.get('/api/admin/users?search=.*')).body).toHaveLength(0);
+  });
+
+  it('suspends a user, signing them out and hiding their listings', async () => {
+    const user = await createUser();
+    const userAgent = await signedInAgent(user);
+    await createListing(user);
+    const alreadyHidden = await createListing(user, { hidden: true, hiddenReason: 'Spam', hiddenBy: 'moderation' });
+    const agent = await adminAgent();
+
+    const res = await agent.post(`/api/admin/users/${user._id}/suspend`).send({ reason: 'Scamming buyers' });
+
+    expect(res.body).toEqual({ suspended: true, listingsHidden: 1 });
+    expect((await userAgent.get('/api/user/favorites')).body.code).toBe('ACCOUNT_SUSPENDED');
+    expect((await api().get('/api/listing/get')).body).toHaveLength(0);
+
+    const listed = await agent.get('/api/admin/users?suspended=true');
+    expect(listed.body[0]).toMatchObject({ suspended: true, suspendedReason: 'Scamming buyers' });
+
+    // Reinstating restores only what the suspension hid.
+    const restored = await agent.post(`/api/admin/users/${user._id}/unsuspend`);
+    expect(restored.body).toEqual({ suspended: false, listingsRestored: 1 });
+    expect((await api().get('/api/listing/get')).body).toHaveLength(1);
+    expect((await api().get(`/api/listing/get/${alreadyHidden._id}`)).status).toBe(404);
+    // And they can sign in again (signedInAgent throws if sign-in fails).
+    expect((await (await signedInAgent(user)).get('/api/user/favorites')).status).toBe(200);
+  });
+
+  it('does not suspend admins or yourself', async () => {
+    const admin = await createUser({ role: 'admin' });
+    const agent = await signedInAgent(admin);
+    const otherAdmin = await createUser({ role: 'admin' });
+
+    expect((await agent.post(`/api/admin/users/${admin._id}/suspend`).send({ reason: 'x' })).status).toBe(400);
+    expect((await agent.post(`/api/admin/users/${otherAdmin._id}/suspend`).send({ reason: 'x' })).status).toBe(400);
+  });
+
+  it('requires a reason and an existing user', async () => {
+    const user = await createUser();
+    const agent = await adminAgent();
+
+    expect((await agent.post(`/api/admin/users/${user._id}/suspend`).send({})).status).toBe(400);
+    expect((await agent.post('/api/admin/users/0123456789abcdef01234567/suspend').send({ reason: 'x' })).status).toBe(404);
+    expect((await agent.post('/api/admin/users/0123456789abcdef01234567/unsuspend')).status).toBe(404);
+  });
+});
