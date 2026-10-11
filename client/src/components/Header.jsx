@@ -1,4 +1,4 @@
-import { FaEnvelope, FaHeart, FaSearch } from 'react-icons/fa';
+import { FaCalendarAlt, FaEnvelope, FaHeart, FaSearch } from 'react-icons/fa';
 import { useUnreadCountPolling } from '../hooks/useUnreadCount';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -78,6 +78,11 @@ export default function Header() {
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
+            </Link>
+          )}
+          {currentUser && (
+            <Link to='/viewings' aria-label='Viewings' className='flex items-center'>
+              <FaCalendarAlt className='text-slate-700 h-5 w-5' />
             </Link>
           )}
           {currentUser && (
