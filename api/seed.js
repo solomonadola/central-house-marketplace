@@ -255,7 +255,7 @@ const seed = async () => {
       requester: createdUsers[1]._id,
       owner: createdUsers[0]._id,
       startsAt: atHour(3, 10),
-      note: 'Saturday morning works best for me.',
+      note: 'Mornings work best for me.',
     },
     {
       listing: createdListings[2]._id,
