@@ -14,6 +14,10 @@ export default function Search() {
     offer: false,
     sort: 'createdAt',
     order: 'desc',
+    minPrice: '',
+    maxPrice: '',
+    minBedrooms: '',
+    minBathrooms: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -30,25 +34,19 @@ export default function Search() {
     const sortFromUrl = urlParams.get('sort');
     const orderFromUrl = urlParams.get('order');
 
-    if (
-      searchTermFromUrl ||
-      typeFromUrl ||
-      parkingFromUrl ||
-      furnishedFromUrl ||
-      offerFromUrl ||
-      sortFromUrl ||
-      orderFromUrl
-    ) {
-      setSidebardata({
-        searchTerm: searchTermFromUrl || '',
-        type: typeFromUrl || 'all',
-        parking: parkingFromUrl === 'true' ? true : false,
-        furnished: furnishedFromUrl === 'true' ? true : false,
-        offer: offerFromUrl === 'true' ? true : false,
-        sort: sortFromUrl || 'createdAt',
-        order: orderFromUrl || 'desc',
-      });
-    }
+    setSidebardata({
+      searchTerm: searchTermFromUrl || '',
+      type: typeFromUrl || 'all',
+      parking: parkingFromUrl === 'true',
+      furnished: furnishedFromUrl === 'true',
+      offer: offerFromUrl === 'true',
+      sort: sortFromUrl || 'createdAt',
+      order: orderFromUrl || 'desc',
+      minPrice: urlParams.get('minPrice') || '',
+      maxPrice: urlParams.get('maxPrice') || '',
+      minBedrooms: urlParams.get('minBedrooms') || '',
+      minBathrooms: urlParams.get('minBathrooms') || '',
+    });
 
     const fetchListings = async () => {
       setLoading(true);
@@ -93,6 +91,15 @@ export default function Search() {
       });
     }
 
+    if (
+      e.target.id === 'minPrice' ||
+      e.target.id === 'maxPrice' ||
+      e.target.id === 'minBedrooms' ||
+      e.target.id === 'minBathrooms'
+    ) {
+      setSidebardata({ ...sidebardata, [e.target.id]: e.target.value });
+    }
+
     if (e.target.id === 'sort_order') {
       const sort = e.target.value.split('_')[0] || 'createdAt';
 
@@ -112,6 +119,10 @@ export default function Search() {
     urlParams.set('offer', sidebardata.offer);
     urlParams.set('sort', sidebardata.sort);
     urlParams.set('order', sidebardata.order);
+    // Only include range filters that are set, to keep URLs short.
+    for (const key of ['minPrice', 'maxPrice', 'minBedrooms', 'minBathrooms']) {
+      if (sidebardata[key] !== '') urlParams.set(key, sidebardata[key]);
+    }
     const searchQuery = urlParams.toString();
     navigate(`/search?${searchQuery}`);
   };
@@ -212,11 +223,73 @@ export default function Search() {
               <span>Furnished</span>
             </div>
           </div>
+          <div className='flex gap-2 flex-wrap items-center'>
+            <label className='font-semibold'>Price:</label>
+            <input
+              type='number'
+              id='minPrice'
+              min='0'
+              placeholder='Min'
+              aria-label='Minimum price'
+              className='border rounded-lg p-3 w-28'
+              value={sidebardata.minPrice}
+              onChange={handleChange}
+            />
+            <span>-</span>
+            <input
+              type='number'
+              id='maxPrice'
+              min='0'
+              placeholder='Max'
+              aria-label='Maximum price'
+              className='border rounded-lg p-3 w-28'
+              value={sidebardata.maxPrice}
+              onChange={handleChange}
+            />
+          </div>
+          <div className='flex gap-4 flex-wrap items-center'>
+            <div className='flex items-center gap-2'>
+              <label htmlFor='minBedrooms' className='font-semibold'>
+                Beds:
+              </label>
+              <select
+                id='minBedrooms'
+                className='border rounded-lg p-3'
+                value={sidebardata.minBedrooms}
+                onChange={handleChange}
+              >
+                <option value=''>Any</option>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>
+                    {n}+
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className='flex items-center gap-2'>
+              <label htmlFor='minBathrooms' className='font-semibold'>
+                Baths:
+              </label>
+              <select
+                id='minBathrooms'
+                className='border rounded-lg p-3'
+                value={sidebardata.minBathrooms}
+                onChange={handleChange}
+              >
+                <option value=''>Any</option>
+                {[1, 2, 3, 4].map((n) => (
+                  <option key={n} value={n}>
+                    {n}+
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div className='flex items-center gap-2'>
             <label className='font-semibold'>Sort:</label>
             <select
               onChange={handleChange}
-              defaultValue={'createdAt_desc'}
+              value={`${sidebardata.sort}_${sidebardata.order}`}
               id='sort_order'
               className='border rounded-lg p-3'
             >
