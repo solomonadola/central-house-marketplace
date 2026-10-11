@@ -9,6 +9,7 @@ import Review from './models/review.model.js';
 import Viewing from './models/viewing.model.js';
 import ListingViewDay, { utcDay } from './models/listingViewDay.model.js';
 import { updateListingRating } from './utils/ratings.js';
+import { removeEngagement, seedEngagement } from './seed/engagement.js';
 dotenv.config();
 
 // Seed data is tagged by this email domain so re-running the script only
@@ -130,6 +131,7 @@ const seed = async () => {
   const oldConversations = await Conversation.find({ 'participants.user': { $in: oldIds } }).distinct('_id');
   await Message.deleteMany({ conversation: { $in: oldConversations } });
   await Conversation.deleteMany({ _id: { $in: oldConversations } });
+  await removeEngagement(oldIds, oldListingIds);
   const { deletedCount: removedListings } = await Listing.deleteMany({ userRef: { $in: oldIds } });
   await User.deleteMany({ _id: { $in: oldIds } });
   console.log(`Removed ${oldUsers.length} demo users and ${removedListings} demo listings`);
@@ -271,6 +273,8 @@ const seed = async () => {
     `Created ${createdUsers.length} demo users, ${docs.length} listings, ` +
       `${conversations.length} conversations and ${reviews.length} reviews`
   );
+  await seedEngagement({ users: createdUsers, listings: createdListings, now });
+  console.log('Added price history, questions, open houses, a maintenance request and quick replies');
   console.log(`Demo login: ${createdUsers[0].email} / ${SEED_PASSWORD}`);
   console.log(`Admin login: admin${SEED_DOMAIN} / ${SEED_PASSWORD}`);
 };
