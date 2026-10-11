@@ -40,6 +40,25 @@ describe('apiFetch', () => {
     expect((await res.json()).code).toBe('AUTH_REQUIRED');
   });
 
+  it('signs the user out when the account is suspended', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(403, { success: false, code: 'ACCOUNT_SUSPENDED' }))
+    );
+
+    await apiFetch('/api/user/favorites');
+
+    expect(store.getState().user.currentUser).toBeNull();
+  });
+
+  it('keeps the user signed in on other 403s', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(403, { success: false, message: 'Admins only!' })));
+
+    await apiFetch('/api/admin/stats');
+
+    expect(store.getState().user.currentUser).not.toBeNull();
+  });
+
   it('keeps the user signed in on other 401s', async () => {
     vi.stubGlobal(
       'fetch',
