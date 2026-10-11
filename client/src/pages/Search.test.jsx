@@ -5,8 +5,14 @@ import { Route, Routes, useLocation } from 'react-router-dom';
 import Search from './Search';
 import { makeListing, renderWithProviders } from '../test/utils';
 
-const jsonResponse = (body) =>
-  new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+const jsonResponse = (body, total) =>
+  new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json', ...(total !== undefined && { 'X-Total-Count': String(total) }) },
+  });
+
+const listingsPage = (start, count) =>
+  Array.from({ length: count }, (_, i) => makeListing({ _id: `l${start + i}`, name: `Test Listing Number ${start + i}` }));
 
 const ShowLocation = () => <p data-testid='location'>{useLocation().search}</p>;
 
@@ -70,6 +76,36 @@ describe('Search page', () => {
       expect(params.get('minBedrooms')).toBe('2');
       expect(params.has('minBathrooms')).toBe(false);
     });
+  });
+
+  it('shows the result count and loads more until all are shown', async () => {
+    fetchMock
+      .mockImplementationOnce(async () => jsonResponse(listingsPage(0, 9), 12))
+      .mockImplementationOnce(async () => jsonResponse(listingsPage(9, 3), 12));
+    renderSearch('/search?type=rent');
+
+    expect(await screen.findByText('Showing 9 of 12')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+
+    expect(await screen.findByText('Showing 12 of 12')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/listing/get?type=rent&startIndex=9', undefined);
+    expect(screen.queryByRole('button', { name: 'Show more' })).not.toBeInTheDocument();
+  });
+
+  it('does not offer "Show more" when exactly one page matches', async () => {
+    fetchMock.mockImplementation(async () => jsonResponse(listingsPage(0, 9), 9));
+    renderSearch();
+
+    expect(await screen.findByText('Showing 9 of 9')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Show more' })).not.toBeInTheDocument();
+  });
+
+  it('shows an error when loading fails', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    renderSearch();
+
+    expect(await screen.findByText(/Could not load listings/)).toBeInTheDocument();
+    expect(screen.queryByText('No listing found!')).not.toBeInTheDocument();
   });
 
   it('shows a message when nothing matches', async () => {

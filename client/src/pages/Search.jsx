@@ -22,7 +22,9 @@ export default function Search() {
 
   const [loading, setLoading] = useState(false);
   const [listings, setListings] = useState([]);
-  const [showMore, setShowMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [error, setError] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
@@ -50,17 +52,21 @@ export default function Search() {
 
     const fetchListings = async () => {
       setLoading(true);
-      setShowMore(false);
-      const searchQuery = urlParams.toString();
-      const res = await apiFetch(`/api/listing/get?${searchQuery}`);
-      const data = await res.json();
-      if (data.length > 8) {
-        setShowMore(true);
-      } else {
-        setShowMore(false);
+      setError(false);
+      try {
+        const searchQuery = urlParams.toString();
+        const res = await apiFetch(`/api/listing/get?${searchQuery}`);
+        const data = await res.json();
+        if (!Array.isArray(data)) throw new Error(data.message);
+        setListings(data);
+        setTotal(Number(res.headers.get('X-Total-Count')) || data.length);
+      } catch {
+        setListings([]);
+        setTotal(0);
+        setError(true);
+      } finally {
+        setLoading(false);
       }
-      setListings(data);
-      setLoading(false);
     };
 
     fetchListings();
@@ -128,18 +134,19 @@ export default function Search() {
   };
 
   const onShowMoreClick = async () => {
-    const numberOfListings = listings.length;
-    const startIndex = numberOfListings;
     const urlParams = new URLSearchParams(location.search);
-    urlParams.set('startIndex', startIndex);
-    const searchQuery = urlParams.toString();
-    const res = await apiFetch(`/api/listing/get?${searchQuery}`);
-    const data = await res.json();
-    if (data.length < 9) {
-      setShowMore(false);
+    urlParams.set('startIndex', listings.length);
+    setLoadingMore(true);
+    try {
+      const res = await apiFetch(`/api/listing/get?${urlParams.toString()}`);
+      const data = await res.json();
+      if (Array.isArray(data)) setListings([...listings, ...data]);
+    } finally {
+      setLoadingMore(false);
     }
-    setListings([...listings, ...data]);
   };
+
+  const showMore = !loading && listings.length < total;
   return (
     <div className='flex flex-col md:flex-row'>
       <div className='p-7  border-b-2 md:border-r-2 md:min-h-screen'>
@@ -305,11 +312,23 @@ export default function Search() {
         </form>
       </div>
       <div className='flex-1'>
-        <h1 className='text-3xl font-semibold border-b p-3 text-slate-700 mt-5'>
-          Listing results:
-        </h1>
+        <div className='flex flex-wrap items-baseline justify-between gap-2 border-b p-3 mt-5'>
+          <h1 className='text-3xl font-semibold text-slate-700'>
+            Listing results:
+          </h1>
+          {!loading && !error && total > 0 && (
+            <p className='text-slate-600'>
+              Showing {listings.length} of {total}
+            </p>
+          )}
+        </div>
         <div className='p-7 flex flex-wrap gap-4'>
-          {!loading && listings.length === 0 && (
+          {error && (
+            <p className='text-xl text-red-700'>
+              Could not load listings. Please try again.
+            </p>
+          )}
+          {!loading && !error && listings.length === 0 && (
             <p className='text-xl text-slate-700'>No listing found!</p>
           )}
           {loading && (
@@ -327,9 +346,10 @@ export default function Search() {
           {showMore && (
             <button
               onClick={onShowMoreClick}
-              className='text-green-700 hover:underline p-7 text-center w-full'
+              disabled={loadingMore}
+              className='text-green-700 hover:underline p-7 text-center w-full disabled:opacity-60'
             >
-              Show more
+              {loadingMore ? 'Loading...' : 'Show more'}
             </button>
           )}
         </div>
