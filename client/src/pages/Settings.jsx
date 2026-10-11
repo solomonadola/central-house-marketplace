@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FaBell, FaEnvelopeOpenText } from 'react-icons/fa';
+import BlockedUsers from '../components/BlockedUsers';
 import { apiFetch } from '../utils/apiFetch';
 
 const OPTIONS = [
@@ -106,6 +107,8 @@ export default function Settings() {
           </div>
         </form>
       )}
+
+      <BlockedUsers />
     </main>
   );
 }

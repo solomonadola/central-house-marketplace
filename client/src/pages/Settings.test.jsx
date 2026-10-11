@@ -9,10 +9,14 @@ const jsonResponse = (body, status = 200) =>
 
 describe('Settings page', () => {
   let fetchMock;
+  let blocked;
 
   beforeEach(() => {
+    blocked = [];
     fetchMock = vi.fn(async (url, options = {}) => {
       if (options.method === 'PATCH') return jsonResponse(JSON.parse(options.body));
+      if (options.method === 'DELETE') return jsonResponse({ blocked: false, count: 0 });
+      if (url === '/api/user/blocks') return jsonResponse(blocked);
       return jsonResponse({ emailNotifications: true, marketingEmails: false });
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -45,5 +49,17 @@ describe('Settings page', () => {
     renderWithProviders(<Settings />, { currentUser: { _id: 'me' } });
 
     expect(await screen.findByText(/Could not load your preferences/)).toBeInTheDocument();
+  });
+
+  it('lists blocked users and unblocks them', async () => {
+    blocked = [{ _id: 'u9', username: 'pest_user', avatar: 'https://example.com/p.png' }];
+    renderWithProviders(<Settings />, { currentUser: { _id: 'me' } });
+
+    expect(await screen.findByText('pest_user')).toBeInTheDocument();
+    blocked = [];
+    await userEvent.click(screen.getByRole('button', { name: 'Unblock' }));
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/user/blocks/u9', { method: 'DELETE' });
+    expect(await screen.findByText("You haven't blocked anyone.")).toBeInTheDocument();
   });
 });
