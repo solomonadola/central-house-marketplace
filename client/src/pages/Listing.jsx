@@ -28,6 +28,7 @@ import ListingReviews from '../components/ListingReviews';
 import PriceHistory from '../components/PriceHistory';
 import ListingQuestions from '../components/ListingQuestions';
 import OpenHouses from '../components/OpenHouses';
+import MortgageCalculator from '../components/MortgageCalculator';
 import ListingAvailability from '../components/ListingAvailability';
 import ReportListing from '../components/ReportListing';
 import RequestViewing from '../components/RequestViewing';
@@ -307,6 +308,7 @@ export default function Listing() {
             </section>
           )}
 
+          {listing.type === 'sale' && <MortgageCalculator price={listing.offer ? listing.discountPrice : listing.regularPrice} />}
           <OpenHouses listingId={listing._id} isOwner={isOwner} />
           <PriceHistory listingId={listing._id} perMonth={listing.type === 'rent'} />
           <ListingReviews listingId={listing._id} />
