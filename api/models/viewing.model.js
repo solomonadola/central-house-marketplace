@@ -9,6 +9,9 @@ const viewingSchema = new mongoose.Schema(
     requester: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     startsAt: { type: Date, required: true },
+    // How long the visit is expected to take; used to detect overlapping
+    // viewing requests on the same listing.
+    durationMinutes: { type: Number, default: 60, min: 15, max: 480 },
     // The requester's IANA time zone, used to write times in messages.
     timeZone: { type: String, default: 'UTC' },
     note: { type: String, trim: true, maxlength: 500, default: '' },
