@@ -3,10 +3,16 @@ import jwt from 'jsonwebtoken';
 const COOKIE_NAME = 'access_token';
 const TOKEN_TTL_DAYS = 7;
 
+// Secure (HTTPS-only) in production. COOKIE_SECURE=false overrides it for
+// production builds served over plain HTTP, e.g. Docker on a local network.
+const secure = process.env.COOKIE_SECURE
+  ? process.env.COOKIE_SECURE === 'true'
+  : process.env.NODE_ENV === 'production';
+
 const cookieOptions = {
   httpOnly: true,
   sameSite: 'lax',
-  secure: process.env.NODE_ENV === 'production',
+  secure,
 };
 
 // Pass a user document loaded with '+tokenVersion'; the token records the
