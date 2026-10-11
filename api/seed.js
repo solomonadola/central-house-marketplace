@@ -55,28 +55,30 @@ const users = [
   { username: 'james_properties', avatar: 'https://i.pravatar.cc/150?img=59' },
 ];
 
-// [name, description, address, type, regularPrice, discountPrice|null, bedrooms, bathrooms, furnished, parking]
+// [name, description, address, type, regularPrice, discountPrice|null, bedrooms, bathrooms, furnished, parking, [lat, lng]]
+// Street-level addresses in real San Francisco neighbourhoods, with fixed
+// coordinates so seeding doesn't depend on the geocoding service.
 const listings = [
-  ['Modern Family Home with Garden', 'Spacious four-bedroom family home on a quiet tree-lined street. Open-plan kitchen, large private garden and a double garage. Walking distance to schools and parks.', '42 Maple Avenue, Springfield', 'sale', 485000, 459000, 4, 3, false, true],
-  ['Cozy Downtown Studio', 'Bright studio apartment in the heart of downtown. Fully furnished with a modern kitchenette, fast internet and on-site laundry. Perfect for young professionals.', '310 Market Street, Apt 5B, Riverside', 'rent', 1150, null, 1, 1, true, false],
-  ['Luxury Villa with Pool', 'Stunning contemporary villa with floor-to-ceiling windows, infinity pool and panoramic views. Chef\'s kitchen, home cinema and a three-car garage.', '8 Ocean Crest Drive, Bayview', 'sale', 1250000, null, 5, 5, true, true],
-  ['Charming Two-Bedroom Cottage', 'Renovated cottage full of character, with exposed beams, a wood-burning fireplace and a sunny back patio. Close to the village high street.', '17 Willow Lane, Oakridge', 'rent', 1650, 1500, 2, 1, true, true],
-  ['Riverside Apartment with Balcony', 'Two-bedroom apartment with a private balcony overlooking the river. Secure entry, elevator and a dedicated parking space.', '55 Quay Road, Apt 12, Riverside', 'rent', 1900, null, 2, 2, false, true],
-  ['Suburban Ranch House', 'Single-storey ranch home on a generous lot. Updated bathrooms, new roof in 2024 and a large backyard ready for entertaining.', '903 Prairie Road, Springfield', 'sale', 329000, 315000, 3, 2, false, true],
-  ['Penthouse with City Views', 'Top-floor penthouse with wraparound terrace and sweeping skyline views. Concierge, gym and rooftop lounge included.', '1 Skyline Plaza, PH2, Metro City', 'sale', 975000, null, 3, 3, true, true],
-  ['Student-Friendly Shared House', 'Five-bedroom shared house ten minutes from campus. All bills included, furnished rooms and a large communal kitchen.', '22 College Street, Oakridge', 'rent', 2600, 2400, 5, 2, true, false],
-  ['Minimalist Loft Apartment', 'Converted warehouse loft with soaring ceilings, polished concrete floors and huge industrial windows. Open-plan living at its best.', '78 Foundry Lane, Unit 3, Metro City', 'rent', 2300, null, 1, 1, false, false],
-  ['Lakefront Cabin Retreat', 'Peaceful lakefront cabin with a private dock, wraparound porch and stone fireplace. Ideal as a holiday home or rental investment.', '5 Pinecone Trail, Lake Serene', 'sale', 410000, 389000, 3, 2, true, true],
-  ['Elegant Townhouse', 'Three-storey townhouse with period features, modern kitchen and a rooftop terrace. Located in a sought-after historic district.', '14 Heritage Row, Old Town', 'sale', 620000, null, 3, 3, false, false],
-  ['Garden-Level Flat', 'Quiet garden-level flat with direct access to a shared landscaped garden. Recently repainted with new flooring throughout.', '9 Elm Court, Flat A, Springfield', 'rent', 1350, 1250, 2, 1, false, false],
-  ['Executive Home Near Golf Course', 'Impressive five-bedroom executive home backing onto the golf course. Home office, wine cellar and landscaped grounds.', '120 Fairway Drive, Greenhill', 'sale', 890000, 849000, 5, 4, false, true],
-  ['Furnished One-Bedroom by the Park', 'Fully furnished one-bedroom apartment overlooking the city park. Move-in ready with all utilities set up.', '200 Parkside Avenue, Apt 7C, Metro City', 'rent', 1700, null, 1, 1, true, true],
-  ['Starter Home with Renovation Potential', 'Solid three-bedroom home in a growing neighbourhood. Needs some updating but offers great value and a large plot.', '61 Birch Street, Oakridge', 'sale', 215000, 199000, 3, 1, false, true],
-  ['Beachside Holiday Apartment', 'Two-bedroom apartment steps from the beach. Sea-view balcony, shared pool and secure underground parking.', '33 Coastline Boulevard, Apt 4, Bayview', 'rent', 2800, 2550, 2, 2, true, true],
-  ['Contemporary Duplex', 'Newly built duplex with smart-home features, energy-efficient design and a private courtyard.', '47 Innovation Way, Greenhill', 'sale', 545000, null, 3, 2, false, true],
-  ['Spacious Family Rental', 'Large four-bedroom house available for long-term rent. Fenced backyard, pet-friendly and close to the train station.', '18 Station Road, Springfield', 'rent', 2450, null, 4, 2, false, true],
-  ['Historic Brownstone', 'Beautifully restored brownstone with original moulding, high ceilings and a private rear garden.', '256 Chestnut Street, Old Town', 'sale', 1080000, 1020000, 4, 3, false, false],
-  ['Compact City Micro-Apartment', 'Smartly designed micro-apartment with fold-away furniture and a shared rooftop garden. Great value in a central location.', '91 Central Avenue, Unit 15, Metro City', 'rent', 950, 875, 1, 1, true, false],
+  ['Modern Family Home with Garden', 'Spacious four-bedroom family home on a quiet tree-lined street. Open-plan kitchen, large private garden and a double garage. Walking distance to schools and parks.', 'Noe Street, Noe Valley, San Francisco', 'sale', 485000, 459000, 4, 3, false, true, [37.7502, -122.4337]],
+  ['Cozy Downtown Studio', 'Bright studio apartment in the heart of downtown. Fully furnished with a modern kitchenette, fast internet and on-site laundry. Perfect for young professionals.', 'Valencia Street, Mission District, San Francisco', 'rent', 1150, null, 1, 1, true, false, [37.7599, -122.4214]],
+  ['Luxury Villa with Pool', 'Stunning contemporary villa with floor-to-ceiling windows, infinity pool and panoramic views. Chef\'s kitchen, home cinema and a three-car garage.', 'Sea Cliff Avenue, Sea Cliff, San Francisco', 'sale', 1250000, null, 5, 5, true, true, [37.7869, -122.49]],
+  ['Charming Two-Bedroom Cottage', 'Renovated cottage full of character, with exposed beams, a wood-burning fireplace and a sunny back patio. Close to the village high street.', 'Church Street, Castro, San Francisco', 'rent', 1650, 1500, 2, 1, true, true, [37.7609, -122.429]],
+  ['Riverside Apartment with Balcony', 'Two-bedroom apartment with a private balcony overlooking the river. Secure entry, elevator and a dedicated parking space.', 'Mission Bay Boulevard, Mission Bay, San Francisco', 'rent', 1900, null, 2, 2, false, true, [37.7706, -122.391]],
+  ['Suburban Ranch House', 'Single-storey ranch home on a generous lot. Updated bathrooms, new roof in 2024 and a large backyard ready for entertaining.', 'Ocean Avenue, Ingleside, San Francisco', 'sale', 329000, 315000, 3, 2, false, true, [37.7236, -122.456]],
+  ['Penthouse with City Views', 'Top-floor penthouse with wraparound terrace and sweeping skyline views. Concierge, gym and rooftop lounge included.', 'California Street, Nob Hill, San Francisco', 'sale', 975000, null, 3, 3, true, true, [37.7915, -122.414]],
+  ['Student-Friendly Shared House', 'Five-bedroom shared house ten minutes from campus. All bills included, furnished rooms and a large communal kitchen.', 'Haight Street, Haight-Ashbury, San Francisco', 'rent', 2600, 2400, 5, 2, true, false, [37.7692, -122.4481]],
+  ['Minimalist Loft Apartment', 'Converted warehouse loft with soaring ceilings, polished concrete floors and huge industrial windows. Open-plan living at its best.', '3rd Street, Dogpatch, San Francisco', 'rent', 2300, null, 1, 1, false, false, [37.7606, -122.3884]],
+  ['Lakefront Cabin Retreat', 'Peaceful lakefront cabin with a private dock, wraparound porch and stone fireplace. Ideal as a holiday home or rental investment.', 'Lake Merced Boulevard, Lake Merced, San Francisco', 'sale', 410000, 389000, 3, 2, true, true, [37.721, -122.484]],
+  ['Elegant Townhouse', 'Three-storey townhouse with period features, modern kitchen and a rooftop terrace. Located in a sought-after historic district.', 'Fillmore Street, Pacific Heights, San Francisco', 'sale', 620000, null, 3, 3, false, false, [37.7905, -122.434]],
+  ['Garden-Level Flat', 'Quiet garden-level flat with direct access to a shared landscaped garden. Recently repainted with new flooring throughout.', 'Cortland Avenue, Bernal Heights, San Francisco', 'rent', 1350, 1250, 2, 1, false, false, [37.7389, -122.416]],
+  ['Executive Home Near Golf Course', 'Impressive five-bedroom executive home backing onto the golf course. Home office, wine cellar and landscaped grounds.', 'Harding Road, Lakeshore, San Francisco', 'sale', 890000, 849000, 5, 4, false, true, [37.725, -122.493]],
+  ['Furnished One-Bedroom by the Park', 'Fully furnished one-bedroom apartment overlooking the city park. Move-in ready with all utilities set up.', 'Fulton Street, NoPa, San Francisco', 'rent', 1700, null, 1, 1, true, true, [37.776, -122.44]],
+  ['Starter Home with Renovation Potential', 'Solid three-bedroom home in a growing neighbourhood. Needs some updating but offers great value and a large plot.', 'Mission Street, Excelsior, San Francisco', 'sale', 215000, 199000, 3, 1, false, true, [37.724, -122.435]],
+  ['Beachside Holiday Apartment', 'Two-bedroom apartment steps from the beach. Sea-view balcony, shared pool and secure underground parking.', 'Great Highway, Outer Sunset, San Francisco', 'rent', 2800, 2550, 2, 2, true, true, [37.755, -122.508]],
+  ['Contemporary Duplex', 'Newly built duplex with smart-home features, energy-efficient design and a private courtyard.', '18th Street, Potrero Hill, San Francisco', 'sale', 545000, null, 3, 2, false, true, [37.7616, -122.399]],
+  ['Spacious Family Rental', 'Large four-bedroom house available for long-term rent. Fenced backyard, pet-friendly and close to the train station.', 'Clement Street, Inner Richmond, San Francisco', 'rent', 2450, null, 4, 2, false, true, [37.783, -122.464]],
+  ['Historic Brownstone', 'Beautifully restored brownstone with original moulding, high ceilings and a private rear garden.', 'Columbus Avenue, North Beach, San Francisco', 'sale', 1080000, 1020000, 4, 3, false, false, [37.8, -122.41]],
+  ['Compact City Micro-Apartment', 'Smartly designed micro-apartment with fold-away furniture and a shared rooftop garden. Great value in a central location.', 'Hayes Street, Hayes Valley, San Francisco', 'rent', 950, 875, 1, 1, true, false, [37.7765, -122.4245]],
 ];
 
 const pick = (arr, i) => arr[i % arr.length];
@@ -98,7 +100,7 @@ const seed = async () => {
 
   const now = Date.now();
   const docs = listings.map(
-    ([name, description, address, type, regularPrice, discountPrice, bedrooms, bathrooms, furnished, parking], i) => ({
+    ([name, description, address, type, regularPrice, discountPrice, bedrooms, bathrooms, furnished, parking, [lat, lng]], i) => ({
       name,
       description,
       address,
@@ -110,6 +112,7 @@ const seed = async () => {
       bathrooms,
       furnished,
       parking,
+      location: { lat, lng },
       imageUrls: [pick(exteriors, i), pick(interiors, i * 2), pick(interiors, i * 2 + 1)],
       userRef: pick(createdUsers, i)._id.toString(),
       // Stagger creation dates so "recent" sorting looks realistic.
