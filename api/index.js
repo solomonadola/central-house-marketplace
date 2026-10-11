@@ -1,24 +1,23 @@
+// Must be the first import so .env is loaded before other modules read it.
+import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.route.js';
 import listingRouter from './routes/listing.route.js';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import path from 'path';
-dotenv.config();
+const missing = ['DB', 'JWT_SECRET'].filter((key) => !process.env[key]);
+if (missing.length) {
+  console.error(
+    `Missing required environment variables: ${missing.join(', ')}. ` +
+      'Copy .env.example to .env and fill them in.'
+  );
+  process.exit(1);
+}
 
-mongoose
-  .connect(process.env.DB)
-  .then(() => {
-    console.log('Connected to MongoDB!');
-  })
-  .catch((err) => {
-    console.log(err);
-  });
-
-  const __dirname = path.resolve();
+const __dirname = path.resolve();
 
 const app = express();
 
@@ -42,11 +41,6 @@ app.use(express.json());
 
 app.use(cookieParser());
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}!`);
-});
 
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
@@ -77,3 +71,20 @@ app.use((err, req, res, next) => {
     message,
   });
 });
+
+const PORT = process.env.PORT || 3000;
+
+// Only accept requests once the database is reachable; a bad DB setting
+// should stop the server loudly rather than leave every request hanging.
+mongoose
+  .connect(process.env.DB, { serverSelectionTimeoutMS: 10000 })
+  .then(() => {
+    console.log('Connected to MongoDB!');
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}!`);
+    });
+  })
+  .catch((err) => {
+    console.error('Could not connect to MongoDB:', err.message);
+    process.exit(1);
+  });
