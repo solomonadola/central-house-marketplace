@@ -42,17 +42,25 @@ const pickEditable = (body) =>
     EDITABLE_FIELDS.filter((key) => key in body).map((key) => [key, body[key]])
   );
 
+// Creates a listing for a user from already-validated fields: geocodes the
+// address, alerts matching saved searches and records the first price.
+// Shared by POST /create and publishing a draft.
+export const createListingFor = async (userId, body) => {
+  const fields = pickEditable(body);
+  const location = await geocodeAddress(fields.address);
+  const listing = await Listing.create({
+    ...fields,
+    ...(location && { location }),
+    userRef: userId,
+  });
+  await notifySavedSearchMatches(listing);
+  await recordInitialPrice(listing);
+  return listing;
+};
+
 export const createListing = async (req, res, next) => {
   try {
-    const fields = pickEditable(req.body);
-    const location = await geocodeAddress(fields.address);
-    const listing = await Listing.create({
-      ...fields,
-      ...(location && { location }),
-      userRef: req.user.id,
-    });
-    await notifySavedSearchMatches(listing);
-    await recordInitialPrice(listing);
+    const listing = await createListingFor(req.user.id, req.body);
     return res.status(201).json(listing);
   } catch (error) {
     next(error);
