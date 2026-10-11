@@ -65,6 +65,9 @@ const listingSchema = new mongoose.Schema(
       ),
       default: undefined,
     },
+    // Kept in sync with the listing's reviews for cheap display and sorting.
+    ratingAverage: { type: Number, default: 0, min: 0, max: 5 },
+    ratingCount: { type: Number, default: 0, min: 0 },
     views: {
       type: Number,
       default: 0,

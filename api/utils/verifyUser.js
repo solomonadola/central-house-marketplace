@@ -14,3 +14,15 @@ export const verifyToken = (req, res, next) => {
     next();
   });
 };
+
+// For public routes that show extra info to signed-in users: sets req.user
+// when a valid token is present, and carries on anonymously otherwise.
+export const optionalAuth = (req, res, next) => {
+  const token = req.cookies.access_token;
+  if (!token) return next();
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (!err) req.user = user;
+    next();
+  });
+};
