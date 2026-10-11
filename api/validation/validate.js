@@ -8,7 +8,8 @@ export const validate = (schema) => (req, res, next) => {
     const issue = result.error.issues[0];
     const field = issue.path.join('.');
     const message =
-      issue.code === 'invalid_type' && issue.received === 'undefined'
+      // Zod's default 'Required' doesn't say which field; keep custom messages.
+      issue.code === 'invalid_type' && issue.received === 'undefined' && issue.message === 'Required'
         ? `${field} is required`
         : issue.message;
     return next(errorHandler(400, message));
