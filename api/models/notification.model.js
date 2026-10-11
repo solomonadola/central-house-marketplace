@@ -25,6 +25,8 @@ export const NOTIFICATION_TYPES = [
   'question_asked',
   'question_answered',
   'open_house_cancelled',
+  'maintenance_request',
+  'maintenance_update',
 ];
 
 const notificationSchema = new mongoose.Schema(

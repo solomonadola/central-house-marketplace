@@ -19,6 +19,7 @@ import path from 'path';
 import { errorHandler } from './utils/error.js';
 import questionRouter from './routes/question.route.js';
 import openHouseRouter from './routes/openHouse.route.js';
+import maintenanceRouter from './routes/maintenance.route.js';
 
 const __dirname = path.resolve();
 
@@ -60,6 +61,7 @@ app.use('/api/payments', paymentRouter);
 app.use('/api/insights', insightsRouter);
 app.use('/api/questions', questionRouter);
 app.use('/api/open-houses', openHouseRouter);
+app.use('/api/maintenance', maintenanceRouter);
 
 // Liveness probe for Docker/monitoring.
 app.get('/api/health', (req, res) => {

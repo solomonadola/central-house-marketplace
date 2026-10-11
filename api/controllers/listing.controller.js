@@ -15,6 +15,7 @@ import { AMENITIES, PROPERTY_TYPES } from '../constants/listing.js';
 import PriceChange from '../models/priceChange.model.js';
 import ListingQuestion from '../models/listingQuestion.model.js';
 import OpenHouse from '../models/openHouse.model.js';
+import MaintenanceRequest from '../models/maintenanceRequest.model.js';
 import { dropFromPeak, recordInitialPrice, recordPriceChange } from '../utils/priceHistory.js';
 
 // Fields a client may set. Ownership (userRef) is always taken from the
@@ -84,6 +85,7 @@ export const deleteListing = async (req, res, next) => {
     await PriceChange.deleteMany({ listing: listing._id });
     await ListingQuestion.deleteMany({ listing: listing._id });
     await OpenHouse.deleteMany({ listing: listing._id });
+    await MaintenanceRequest.deleteMany({ listing: listing._id });
     res.status(200).json('Listing has been deleted!');
   } catch (error) {
     next(error);

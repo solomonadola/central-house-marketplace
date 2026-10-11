@@ -352,3 +352,29 @@ export const createOpenHouseSchema = z
     message: `An open house can last at most ${MAX_OPEN_HOUSE_HOURS} hours`,
     path: ['endsAt'],
   });
+
+export const createMaintenanceSchema = z.object({
+  listingId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid listing id'),
+  title: z
+    .string({ required_error: 'Please describe the problem' })
+    .trim()
+    .min(5, 'Title must be at least 5 characters')
+    .max(100, 'Title must be at most 100 characters'),
+  description: z.string().trim().max(2000, 'Description must be at most 2000 characters').optional().default(''),
+  category: z.enum(['plumbing', 'electrical', 'heating', 'appliance', 'pest', 'structural', 'other'], {
+    errorMap: () => ({ message: 'Please choose a category' }),
+  }),
+  urgency: z
+    .enum(['low', 'normal', 'urgent'], { errorMap: () => ({ message: "Urgency must be 'low', 'normal' or 'urgent'" }) })
+    .optional()
+    .default('normal'),
+});
+
+export const maintenanceUpdateSchema = z
+  .object({
+    body: z.string().trim().max(2000, 'Update must be at most 2000 characters').optional().default(''),
+    status: z
+      .enum(['open', 'in_progress', 'resolved', 'closed'], { errorMap: () => ({ message: 'Unknown status' }) })
+      .optional(),
+  })
+  .refine((v) => v.body.length > 0 || v.status, { message: 'Write an update or change the status' });

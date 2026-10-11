@@ -242,3 +242,26 @@ export const notifyOpenHouseCancelled = ({ recipients, listingId, listingName, w
     meta: { listingId },
     email: true,
   });
+
+export const notifyMaintenanceRequested = ({ recipient, tenantName, title, urgency, requestId }) =>
+  notify({
+    recipient,
+    type: 'maintenance_request',
+    title: `${urgency === 'urgent' ? 'Urgent: ' : ''}${tenantName} reported a problem`,
+    body: title,
+    link: `/maintenance/${requestId}`,
+    meta: { requestId },
+    email: true,
+  });
+
+const STATUS_WORDS = { open: 'reopened', in_progress: 'in progress', resolved: 'resolved', closed: 'closed' };
+
+export const notifyMaintenanceUpdated = ({ recipient, authorName, title, status, requestId }) =>
+  notify({
+    recipient,
+    type: 'maintenance_update',
+    title: status ? `"${title}" is now ${STATUS_WORDS[status]}` : `${authorName} replied about "${title}"`,
+    body: status ? `Updated by ${authorName}` : '',
+    link: `/maintenance/${requestId}`,
+    meta: { requestId, status: status ?? null },
+  });
