@@ -2,6 +2,7 @@ import bcryptjs from 'bcryptjs';
 import User from '../models/user.model.js';
 import { errorHandler } from '../utils/error.js';
 import Listing from '../models/listing.model.js';
+import { clearAuthCookie } from '../utils/authCookie.js';
 
 export const test = (req, res) => {
   res.json({
@@ -44,7 +45,7 @@ export const deleteUser = async (req, res, next) => {
   try {
     await User.findByIdAndDelete(req.params.id);
     await Listing.deleteMany({ userRef: req.params.id });
-    res.clearCookie('access_token');
+    clearAuthCookie(res);
     res.status(200).json('User has been deleted!');
   } catch (error) {
     next(error);
