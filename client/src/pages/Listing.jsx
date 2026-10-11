@@ -27,6 +27,7 @@ import ListingsMap from '../components/ListingsMap';
 import ListingReviews from '../components/ListingReviews';
 import PriceHistory from '../components/PriceHistory';
 import ListingQuestions from '../components/ListingQuestions';
+import OpenHouses from '../components/OpenHouses';
 import ListingAvailability from '../components/ListingAvailability';
 import ReportListing from '../components/ReportListing';
 import RequestViewing from '../components/RequestViewing';
@@ -306,6 +307,7 @@ export default function Listing() {
             </section>
           )}
 
+          <OpenHouses listingId={listing._id} isOwner={isOwner} />
           <PriceHistory listingId={listing._id} perMonth={listing.type === 'rent'} />
           <ListingReviews listingId={listing._id} />
           <ListingQuestions listingId={listing._id} />

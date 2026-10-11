@@ -33,6 +33,7 @@ import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
 import AdminRoute from './components/AdminRoute';
+import OpenHousesPage from './pages/OpenHousesPage';
 import AdminUserDetail from './components/admin/AdminUserDetail';
 
 export default function App() {
@@ -53,6 +54,7 @@ export default function App() {
         <Route path='/verify-email/:token' element={<VerifyEmail />} />
         <Route path='/about' element={<About />} />
         <Route path='/search' element={<Search />} />
+        <Route path='/open-houses' element={<OpenHousesPage />} />
         <Route path='/compare' element={<Compare />} />
         <Route path='/owner/:ownerId' element={<OwnerProfile />} />
         <Route path='/recently-viewed' element={<RecentlyViewed />} />

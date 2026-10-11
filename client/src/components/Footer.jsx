@@ -13,6 +13,7 @@ export default function Footer() {
         [t('footer.rent'), '/search?type=rent'],
         [t('footer.sale'), '/search?type=sale'],
         [t('footer.offers'), '/search?offer=true'],
+        [t('footer.openHouses'), '/open-houses'],
       ],
     ],
     [

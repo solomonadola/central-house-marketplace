@@ -10,6 +10,7 @@ import {
   FaEye,
   FaEyeSlash,
   FaFlag,
+  FaDoorClosed,
   FaQuestionCircle,
   FaCommentDots,
   FaHeartBroken,
@@ -44,6 +45,7 @@ export const NOTIFICATION_ICONS = {
   price_drop: { Icon: FaArrowDown, tone: 'text-emerald-600 bg-emerald-50' },
   question_asked: { Icon: FaQuestionCircle, tone: 'text-amber-600 bg-amber-50' },
   question_answered: { Icon: FaCommentDots, tone: 'text-sky-600 bg-sky-50' },
+  open_house_cancelled: { Icon: FaDoorClosed, tone: 'text-red-600 bg-red-50' },
 };
 
 const FALLBACK = { Icon: FaBell, tone: 'text-slate-600 bg-slate-100' };
