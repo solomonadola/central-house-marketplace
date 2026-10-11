@@ -21,6 +21,7 @@ import {
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { FaCalendarAlt, FaChartBar, FaCog, FaEnvelope, FaFileAlt, FaHandHoldingUsd, FaHeart, FaHistory, FaPlus, FaSignOutAlt, FaTools } from 'react-icons/fa';
+import ListingDrafts from '../components/ListingDrafts';
 import { apiFetch } from '../utils/apiFetch';
 export default function Profile() {
   const fileRef = useRef(null);
@@ -310,6 +311,8 @@ export default function Profile() {
               </div>
             </form>
           </section>
+
+          <ListingDrafts />
 
           <section className='card p-6' aria-labelledby='listings-title'>
             <div className='flex items-center justify-between gap-3'>

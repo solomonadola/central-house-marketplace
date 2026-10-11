@@ -12,6 +12,8 @@ import { apiFetch } from '../utils/apiFetch';
 import AmenitiesPicker from '../components/AmenitiesPicker';
 import { PROPERTY_TYPE_OPTIONS } from '../utils/listingDetails';
 import { makeCover, moveImage } from '../utils/reorderImages';
+import { useListingDraft } from '../hooks/useListingDraft';
+import { formatShortTime } from '../utils/formatTime';
 
 export default function CreateListing() {
   const { currentUser } = useSelector((state) => state.user);
@@ -37,6 +39,7 @@ export default function CreateListing() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const draft = useListingDraft(formData, (fields) => setFormData((current) => ({ ...current, ...fields })));
   const handleImageSubmit = () => {
     if (files.length > 0 && files.length + formData.imageUrls.length < 7) {
       setUploading(true);
@@ -157,6 +160,7 @@ export default function CreateListing() {
         setError(data.message);
         return;
       }
+      await draft.discardDraft();
       navigate(`/listing/${data._id}`);
     } catch (error) {
       setError(error.message);
@@ -420,6 +424,18 @@ export default function CreateListing() {
           >
             {loading ? 'Creating...' : 'Create listing'}
           </button>
+          <button
+            type='button'
+            onClick={draft.saveDraft}
+            disabled={draft.saving || loading}
+            className='btn-secondary'
+          >
+            {draft.saving ? 'Saving draft...' : 'Save draft'}
+          </button>
+          {draft.savedAt && !draft.error && (
+            <p className='text-xs text-slate-500'>Draft saved {formatShortTime(draft.savedAt)}. You can finish it later from your profile.</p>
+          )}
+          {draft.error && <p className='text-red-700 text-sm'>{draft.error}</p>}
           {error && <p className='text-red-700 text-sm'>{error}</p>}
         </div>
       </form>
