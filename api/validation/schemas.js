@@ -308,3 +308,19 @@ export const createPaymentSchema = z.object({
     .optional()
     .default('USD'),
 });
+
+export const askQuestionSchema = z.object({
+  question: z
+    .string({ required_error: 'Question is required' })
+    .trim()
+    .min(5, 'Question must be at least 5 characters')
+    .max(500, 'Question must be at most 500 characters'),
+});
+
+export const answerQuestionSchema = z.object({
+  answer: z
+    .string({ required_error: 'Answer is required' })
+    .trim()
+    .min(1, 'Answer cannot be empty')
+    .max(1000, 'Answer must be at most 1000 characters'),
+});

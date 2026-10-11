@@ -211,3 +211,24 @@ export const notifyPriceDrop = ({ recipient, listingId, listingName, oldPrice, n
     meta: { listingId, oldPrice, newPrice },
     email: true,
   });
+
+export const notifyQuestionAsked = ({ recipient, askerName, listingId, listingName }) =>
+  notify({
+    recipient,
+    type: 'question_asked',
+    title: `${askerName} asked a question`,
+    body: `About "${listingName}"`,
+    link: `/listing/${listingId}#questions`,
+    meta: { listingId },
+    email: true,
+  });
+
+export const notifyQuestionAnswered = ({ recipient, listingId, listingName }) =>
+  notify({
+    recipient,
+    type: 'question_answered',
+    title: 'Your question was answered',
+    body: `About "${listingName}"`,
+    link: `/listing/${listingId}#questions`,
+    meta: { listingId },
+  });

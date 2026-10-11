@@ -22,6 +22,8 @@ export const NOTIFICATION_TYPES = [
   'payment_received',
   'payment_refunded',
   'price_drop',
+  'question_asked',
+  'question_answered',
 ];
 
 const notificationSchema = new mongoose.Schema(
