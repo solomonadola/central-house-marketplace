@@ -43,6 +43,15 @@ app.get('*', (req, res) => {
 })
 
 app.use((err, req, res, next) => {
+  // Duplicate key from a unique index, e.g. a taken username or email.
+  if (err.code === 11000) {
+    const field = Object.keys(err.keyValue || {})[0] || 'Value';
+    return res.status(409).json({
+      success: false,
+      statusCode: 409,
+      message: `${field.charAt(0).toUpperCase() + field.slice(1)} is already taken!`,
+    });
+  }
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
   return res.status(statusCode).json({
