@@ -34,6 +34,8 @@ import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
 import AdminRoute from './components/AdminRoute';
 import OpenHousesPage from './pages/OpenHousesPage';
+import Maintenance from './pages/Maintenance';
+import MaintenanceDetail from './pages/MaintenanceDetail';
 import AdminUserDetail from './components/admin/AdminUserDetail';
 
 export default function App() {
@@ -67,6 +69,8 @@ export default function App() {
           <Route path='/saved' element={<Saved />} />
           <Route path='/saved-searches' element={<SavedSearches />} />
           <Route path='/viewings' element={<Viewings />} />
+          <Route path='/maintenance' element={<Maintenance />} />
+          <Route path='/maintenance/:requestId' element={<MaintenanceDetail />} />
           <Route path='/applications' element={<Applications />} />
           <Route path='/payments' element={<Payments />} />
           <Route path='/settings' element={<Settings />} />

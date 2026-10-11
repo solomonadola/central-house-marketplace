@@ -10,6 +10,8 @@ import {
   FaEye,
   FaEyeSlash,
   FaFlag,
+  FaTools,
+  FaWrench,
   FaDoorClosed,
   FaQuestionCircle,
   FaCommentDots,
@@ -46,6 +48,8 @@ export const NOTIFICATION_ICONS = {
   question_asked: { Icon: FaQuestionCircle, tone: 'text-amber-600 bg-amber-50' },
   question_answered: { Icon: FaCommentDots, tone: 'text-sky-600 bg-sky-50' },
   open_house_cancelled: { Icon: FaDoorClosed, tone: 'text-red-600 bg-red-50' },
+  maintenance_request: { Icon: FaTools, tone: 'text-amber-600 bg-amber-50' },
+  maintenance_update: { Icon: FaWrench, tone: 'text-sky-600 bg-sky-50' },
 };
 
 const FALLBACK = { Icon: FaBell, tone: 'text-slate-600 bg-slate-100' };

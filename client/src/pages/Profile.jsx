@@ -20,7 +20,7 @@ import {
 } from '../redux/user/userSlice';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { FaCalendarAlt, FaChartBar, FaCog, FaEnvelope, FaFileAlt, FaHandHoldingUsd, FaHeart, FaHistory, FaPlus, FaSignOutAlt } from 'react-icons/fa';
+import { FaCalendarAlt, FaChartBar, FaCog, FaEnvelope, FaFileAlt, FaHandHoldingUsd, FaHeart, FaHistory, FaPlus, FaSignOutAlt, FaTools } from 'react-icons/fa';
 import { apiFetch } from '../utils/apiFetch';
 export default function Profile() {
   const fileRef = useRef(null);
@@ -205,6 +205,7 @@ export default function Profile() {
   const quickLinks = [
     [FaChartBar, 'Listing analytics', '/analytics'],
     [FaCalendarAlt, 'Viewings', '/viewings'],
+    [FaTools, 'Maintenance', '/maintenance'],
     [FaFileAlt, 'Applications', '/applications'],
     [FaHandHoldingUsd, 'Holding deposits', '/payments'],
     [FaHeart, 'Saved homes', '/saved'],
