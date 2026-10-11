@@ -13,11 +13,13 @@ const data = [
 describe('niceMax', () => {
   it.each([
     [0, 1],
-    [7, 10],
-    [37, 50],
-    [120, 200],
+    [7, 8],
+    [37, 40],
+    [56, 60],
+    [120, 120],
+    [130, 160],
     [500, 500],
-    [1234, 2000],
+    [1234, 1600],
   ])('rounds %d up to %d', (value, expected) => {
     expect(niceMax(value)).toBe(expected);
   });
@@ -28,8 +30,8 @@ describe('ViewsChart', () => {
     render(<ViewsChart data={data} />);
 
     expect(screen.getByText('Views per day, last 4 days')).toBeInTheDocument();
-    expect(screen.getByText('50')).toBeInTheDocument();
-    expect(screen.getByText('25')).toBeInTheDocument();
+    expect(screen.getByText('40')).toBeInTheDocument();
+    expect(screen.getByText('20')).toBeInTheDocument();
     // The peak is labeled on the chart (the table repeats it in a cell).
     expect(screen.getByText('37', { selector: 'span' })).toBeInTheDocument();
   });

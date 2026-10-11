@@ -65,7 +65,9 @@ export default function ViewsChart({ data }) {
                   {isActive && (
                     <div
                       role='tooltip'
-                      className='absolute z-10 bottom-full mb-1 whitespace-nowrap rounded-md bg-white border shadow px-2 py-1 text-xs pointer-events-none'
+                      // Sits just above the hovered bar rather than the chart top.
+                      style={{ bottom: height + 6 }}
+                      className='absolute z-10 whitespace-nowrap rounded-md bg-white border shadow px-2 py-1 text-xs pointer-events-none'
                     >
                       <span className='block font-semibold text-slate-900 text-sm'>{d.views.toLocaleString('en-US')} views</span>
                       <span className='text-slate-500'>{formatDay(d.day, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
