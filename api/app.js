@@ -7,6 +7,12 @@ import reviewRouter from './routes/review.route.js';
 import reportRouter from './routes/report.route.js';
 import adminRouter from './routes/admin.route.js';
 import viewingRouter from './routes/viewing.route.js';
+import notificationRouter from './routes/notification.route.js';
+import savedSearchRouter from './routes/savedSearch.route.js';
+import availabilityRouter from './routes/availability.route.js';
+import applicationRouter from './routes/application.route.js';
+import paymentRouter from './routes/payment.route.js';
+import insightsRouter from './routes/insights.route.js';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import path from 'path';
@@ -44,6 +50,17 @@ app.use('/api/reviews', reviewRouter);
 app.use('/api/reports', reportRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/viewings', viewingRouter);
+app.use('/api/notifications', notificationRouter);
+app.use('/api/saved-searches', savedSearchRouter);
+app.use('/api/availability', availabilityRouter);
+app.use('/api/applications', applicationRouter);
+app.use('/api/payments', paymentRouter);
+app.use('/api/insights', insightsRouter);
+
+// Liveness probe for Docker/monitoring.
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: Math.round(process.uptime()) });
+});
 
 // Unknown API routes get a JSON 404 instead of falling through to the
 // client's index.html below.
