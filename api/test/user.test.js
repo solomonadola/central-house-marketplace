@@ -1,8 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import bcryptjs from 'bcryptjs';
 import { api, createListing, createUser, PASSWORD, signedInAgent } from './helpers.js';
 import User from '../models/user.model.js';
 import Listing from '../models/listing.model.js';
+
+// Signup and email changes send verification emails; keep test output quiet.
+vi.mock('../utils/mailer.js', () => ({ sendMail: vi.fn(), appUrl: () => 'https://app.test' }));
 
 describe('POST /api/user/update/:id', () => {
   it('updates the profile and never returns the password', async () => {

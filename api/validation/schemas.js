@@ -135,3 +135,7 @@ export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Reset link is invalid'),
   password: newPassword,
 });
+
+export const verifyEmailSchema = z.object({
+  token: z.string().min(1, 'Confirmation link is invalid'),
+});

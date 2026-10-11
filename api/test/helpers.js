@@ -16,6 +16,8 @@ export const createUser = async ({ password = PASSWORD, ...overrides } = {}) => 
   return User.create({
     username: `user${id}`,
     email: `user${id}@example.com`,
+    // Most tests act as established, verified users.
+    emailVerified: true,
     ...overrides,
     // Low cost factor keeps tests fast.
     password: bcryptjs.hashSync(password, 4),

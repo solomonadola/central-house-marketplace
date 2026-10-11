@@ -8,6 +8,7 @@ import Review from '../models/review.model.js';
 import Report from '../models/report.model.js';
 import { updateListingRating } from '../utils/ratings.js';
 import { clearAuthCookie } from '../utils/authCookie.js';
+import { sendVerificationEmail } from '../utils/emailVerification.js';
 
 export const test = (req, res) => {
   res.json({
@@ -23,6 +24,11 @@ export const updateUser = async (req, res, next) => {
       req.body.password = bcryptjs.hashSync(req.body.password, 10);
     }
 
+    const current = await User.findById(req.params.id, 'email');
+    if (!current) return next(errorHandler(404, 'User not found!'));
+    // A new address has to be confirmed again.
+    const emailChanged = req.body.email !== undefined && req.body.email !== current.email;
+
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       {
@@ -31,10 +37,12 @@ export const updateUser = async (req, res, next) => {
           email: req.body.email,
           password: req.body.password,
           avatar: req.body.avatar,
+          ...(emailChanged && { emailVerified: false }),
         },
       },
       { new: true }
     );
+    if (emailChanged) await sendVerificationEmail(updatedUser);
 
     const { password, ...rest } = updatedUser._doc;
 

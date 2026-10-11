@@ -8,6 +8,7 @@ import {
   recordView,
 } from '../controllers/listing.controller.js';
 import { verifyToken } from '../utils/verifyUser.js';
+import { requireVerifiedEmail } from '../utils/requireVerifiedEmail.js';
 import { viewLimiter } from '../utils/rateLimit.js';
 import { validateObjectId } from '../utils/validateObjectId.js';
 import { validate } from '../validation/validate.js';
@@ -17,7 +18,7 @@ const router = express.Router();
 
 router.param('id', validateObjectId);
 
-router.post('/create', verifyToken, validate(createListingSchema), createListing);
+router.post('/create', verifyToken, requireVerifiedEmail, validate(createListingSchema), createListing);
 router.delete('/delete/:id', verifyToken, deleteListing);
 router.post('/update/:id', verifyToken, validate(updateListingSchema), updateListing);
 router.get('/get/:id', getListing);

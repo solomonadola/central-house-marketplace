@@ -131,7 +131,7 @@ const seed = async () => {
 
   const password = bcryptjs.hashSync(SEED_PASSWORD, 10);
   const createdUsers = await User.insertMany(
-    users.map((u) => ({ ...u, email: `${u.username}${SEED_DOMAIN}`, password }))
+    users.map((u) => ({ ...u, email: `${u.username}${SEED_DOMAIN}`, emailVerified: true, password }))
   );
 
   const now = Date.now();

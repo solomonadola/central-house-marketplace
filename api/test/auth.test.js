@@ -1,8 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import { api, createUser, PASSWORD, signedInAgent, validListing } from './helpers.js';
 import Listing from '../models/listing.model.js';
 import User from '../models/user.model.js';
+
+// Signup and email changes send verification emails; keep test output quiet.
+vi.mock('../utils/mailer.js', () => ({ sendMail: vi.fn(), appUrl: () => 'https://app.test' }));
 
 const getAuthCookie = (res) =>
   (res.headers['set-cookie'] || []).find((c) => c.startsWith('access_token='));
