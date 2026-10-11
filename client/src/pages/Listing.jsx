@@ -19,6 +19,7 @@ import FavoriteButton from '../components/FavoriteButton';
 import ListingsMap from '../components/ListingsMap';
 import ListingReviews from '../components/ListingReviews';
 import ReportListing from '../components/ReportListing';
+import RequestViewing from '../components/RequestViewing';
 import { apiFetch } from '../utils/apiFetch';
 import { recordView } from '../utils/recordView';
 
@@ -173,6 +174,7 @@ export default function Listing() {
               </button>
             )}
             {contact && <Contact listing={listing} />}
+            {currentUser && !isOwner && !listing.hidden && <RequestViewing listingId={listing._id} />}
             {listing.location && (
               <section className='mt-4'>
                 <h2 className='text-xl font-semibold text-slate-700 mb-2'>Location</h2>
