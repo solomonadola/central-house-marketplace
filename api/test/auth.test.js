@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import jwt from 'jsonwebtoken';
-import { api, createUser, PASSWORD } from './helpers.js';
+import { api, createUser, PASSWORD, signedInAgent, validListing } from './helpers.js';
+import Listing from '../models/listing.model.js';
 import User from '../models/user.model.js';
 
 const getAuthCookie = (res) =>
@@ -122,19 +123,33 @@ describe('protected routes', () => {
   it('reject requests without a token', async () => {
     const res = await api().post('/api/listing/create').send({});
     expect(res.status).toBe(401);
+    expect(res.body.code).toBe('AUTH_REQUIRED');
   });
 
   it('reject an expired token', async () => {
     const user = await createUser();
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: -10 });
     const res = await api().post('/api/listing/create').set('Cookie', `access_token=${token}`).send({});
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe('AUTH_REQUIRED');
   });
 
   it('reject a token signed with another secret', async () => {
     const user = await createUser();
     const token = jwt.sign({ id: user._id }, 'not-the-secret');
     const res = await api().post('/api/listing/create').set('Cookie', `access_token=${token}`).send({});
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe('AUTH_REQUIRED');
+  });
+
+  it('do not flag ownership errors as an expired session', async () => {
+    const owner = await createUser();
+    const listing = await Listing.create({ ...validListing(), userRef: owner._id.toString() });
+    const agent = await signedInAgent(await createUser());
+
+    const res = await agent.delete(`/api/listing/delete/${listing._id}`);
+
+    expect(res.status).toBe(401);
+    expect(res.body).not.toHaveProperty('code');
   });
 });

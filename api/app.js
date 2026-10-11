@@ -63,6 +63,8 @@ app.use((err, req, res, next) => {
     success: false,
     statusCode,
     message,
+    // Only our own string codes; Mongo and other libraries use numeric ones.
+    ...(typeof err.code === 'string' && { code: err.code }),
   });
 });
 
