@@ -35,6 +35,7 @@ import RequestViewing from '../components/RequestViewing';
 import { apiFetch } from '../utils/apiFetch';
 import { recordView } from '../utils/recordView';
 import { recordRecentlyViewed } from '../hooks/useRecentlyViewed';
+import ResponseStats from '../components/ResponseStats';
 import { amenityLabels, propertyTypeLabel } from '../utils/listingDetails';
 
 // https://sabe.io/blog/javascript-format-numbers-commas#:~:text=The%20best%20way%20to%20format,format%20the%20number%20with%20commas.
@@ -269,6 +270,8 @@ export default function Listing() {
                 <ListingAvailability listingId={listing._id} />
               </div>
             )}
+
+            {!isOwner && <ResponseStats ownerId={listing.userRef} />}
 
             {currentUser && !isOwner && (
               <div className='flex flex-col gap-3 border-t border-slate-100 pt-4'>
