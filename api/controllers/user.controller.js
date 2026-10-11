@@ -12,6 +12,7 @@ import Payment from '../models/payment.model.js';
 import AvailabilitySlot from '../models/availabilitySlot.model.js';
 import Notification from '../models/notification.model.js';
 import ListingViewDay from '../models/listingViewDay.model.js';
+import PriceChange from '../models/priceChange.model.js';
 import { updateListingRating } from '../utils/ratings.js';
 import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
 import { sendVerificationEmail } from '../utils/emailVerification.js';
@@ -70,6 +71,7 @@ export const deleteUser = async (req, res, next) => {
     const listingIds = await Listing.find({ userRef: req.params.id }).distinct('_id');
     await Listing.deleteMany({ _id: { $in: listingIds } });
     await ListingViewDay.deleteMany({ listing: { $in: listingIds } });
+    await PriceChange.deleteMany({ listing: { $in: listingIds } });
     await User.updateMany(
       { favorites: { $in: listingIds } },
       { $pull: { favorites: { $in: listingIds } } }

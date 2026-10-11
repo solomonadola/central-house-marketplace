@@ -12,6 +12,8 @@ import { geocodeAddress } from '../utils/geocode.js';
 import { notifyListingDeleted } from '../utils/notifications.js';
 import { notifySavedSearchMatches } from '../utils/savedSearch.js';
 import { AMENITIES, PROPERTY_TYPES } from '../constants/listing.js';
+import PriceChange from '../models/priceChange.model.js';
+import { dropFromPeak, recordInitialPrice, recordPriceChange } from '../utils/priceHistory.js';
 
 // Fields a client may set. Ownership (userRef) is always taken from the
 // auth token so users can't create or transfer listings as someone else.
@@ -47,6 +49,7 @@ export const createListing = async (req, res, next) => {
       userRef: req.user.id,
     });
     await notifySavedSearchMatches(listing);
+    await recordInitialPrice(listing);
     return res.status(201).json(listing);
   } catch (error) {
     next(error);
@@ -76,6 +79,7 @@ export const deleteListing = async (req, res, next) => {
     await Application.deleteMany({ listing: listing._id });
     await Payment.deleteMany({ listing: listing._id });
     await ListingViewDay.deleteMany({ listing: listing._id });
+    await PriceChange.deleteMany({ listing: listing._id });
     res.status(200).json('Listing has been deleted!');
   } catch (error) {
     next(error);
@@ -105,6 +109,7 @@ export const updateListing = async (req, res, next) => {
       new: true,
       runValidators: true,
     });
+    await recordPriceChange(listing, updatedListing);
     res.status(200).json(updatedListing);
   } catch (error) {
     next(error);
@@ -356,6 +361,24 @@ export const getSimilarListings = async (req, res, next) => {
     });
 
     res.status(200).json(candidates.slice(0, MAX_SIMILAR));
+  } catch (error) {
+    next(error);
+  }
+};
+
+// A listing's price history, newest first, with how far it has dropped from
+// its highest price. Hidden and paused listings follow the same visibility
+// rules as the listing page.
+export const getPriceHistory = async (req, res, next) => {
+  try {
+    const listing = await Listing.findById(req.params.id, 'userRef hidden active');
+    const canSeeHidden = req.user && (req.user.id === listing?.userRef || req.user.role === 'admin');
+    if (!listing || ((listing.hidden || listing.active === false) && !canSeeHidden)) {
+      return next(errorHandler(404, 'Listing not found!'));
+    }
+
+    const history = await PriceChange.find({ listing: listing._id }).sort({ createdAt: -1, _id: -1 }).limit(50).lean();
+    res.status(200).json({ history, dropFromPeak: dropFromPeak(history) });
   } catch (error) {
     next(error);
   }

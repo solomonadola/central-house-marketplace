@@ -9,6 +9,7 @@ import {
   getListingsByIds,
   getListingsByRecentIds,
   getSimilarListings,
+  getPriceHistory,
   recordView,
   setListingActive,
 } from '../controllers/listing.controller.js';
@@ -34,6 +35,7 @@ router.post('/:id/active', verifyToken, validate(setListingActiveSchema), setLis
 router.post('/:id/duplicate', verifyToken, duplicateListing);
 router.get('/get/:id', optionalAuth, getListing);
 router.get('/:id/similar', getSimilarListings);
+router.get('/:id/price-history', optionalAuth, getPriceHistory);
 router.post('/view/:id', viewLimiter, recordView);
 router.get('/compare', getListingsByIds);
 router.get('/by-ids', getListingsByRecentIds);

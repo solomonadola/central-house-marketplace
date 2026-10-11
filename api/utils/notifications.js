@@ -199,3 +199,15 @@ export const notifyPaymentRefunded = ({ recipient, amount, currency, listingName
     link: '/payments',
     email: true,
   });
+
+
+export const notifyPriceDrop = ({ recipient, listingId, listingName, oldPrice, newPrice, perMonth }) =>
+  notify({
+    recipient,
+    type: 'price_drop',
+    title: `Price drop on "${listingName}"`,
+    body: `Now ${money(newPrice)}${perMonth ? ' / month' : ''}, down from ${money(oldPrice)}.`,
+    link: `/listing/${listingId}`,
+    meta: { listingId, oldPrice, newPrice },
+    email: true,
+  });
