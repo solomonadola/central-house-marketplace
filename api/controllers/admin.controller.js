@@ -98,3 +98,48 @@ export const updateReport = async (req, res, next) => {
     next(error);
   }
 };
+
+// Hides a listing from everyone but its owner and admins, and closes the
+// open reports about it.
+export const hideListing = async (req, res, next) => {
+  try {
+    const listing = await Listing.findByIdAndUpdate(
+      req.params.id,
+      { hidden: true, hiddenReason: req.body.reason, hiddenBy: 'moderation' },
+      { new: true }
+    );
+    if (!listing) return next(errorHandler(404, 'Listing not found!'));
+    await Report.updateMany({ listing: listing._id, status: 'open' }, { status: 'resolved' });
+    res.status(200).json(listing);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const unhideListing = async (req, res, next) => {
+  try {
+    const listing = await Listing.findByIdAndUpdate(
+      req.params.id,
+      { hidden: false, hiddenReason: '', hiddenBy: null },
+      { new: true }
+    );
+    if (!listing) return next(errorHandler(404, 'Listing not found!'));
+    res.status(200).json(listing);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Hidden listings, most recently changed first.
+export const listHiddenListings = async (req, res, next) => {
+  try {
+    const listings = await Listing.find({ hidden: true }).sort({ updatedAt: -1 }).limit(200);
+    const owners = await User.find({ _id: { $in: listings.map((l) => l.userRef) } }, 'username');
+    const ownerNames = Object.fromEntries(owners.map((u) => [u._id.toString(), u.username]));
+    res.status(200).json(
+      listings.map((l) => ({ ...l.toObject(), ownerUsername: ownerNames[l.userRef] ?? null }))
+    );
+  } catch (error) {
+    next(error);
+  }
+};

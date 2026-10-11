@@ -103,3 +103,51 @@ describe('reports queue', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('listing moderation', () => {
+  it('hides a listing with a reason and resolves its open reports', async () => {
+    const owner = await createUser({ username: 'listing_owner' });
+    const listing = await createListing(owner, { name: 'Suspicious Listing Here' });
+    const reporter = await createUser();
+    await Report.create({ listing: listing._id, reporter: reporter._id, reason: 'scam' });
+    const agent = await adminAgent();
+
+    const res = await agent.post(`/api/admin/listings/${listing._id}/hide`).send({ reason: 'Fake photos' });
+
+    expect(res.body).toMatchObject({ hidden: true, hiddenReason: 'Fake photos', hiddenBy: 'moderation' });
+    expect(await Report.countDocuments({ status: 'open' })).toBe(0);
+    expect((await api().get(`/api/listing/get/${listing._id}`)).status).toBe(404);
+
+    const hidden = await agent.get('/api/admin/listings/hidden');
+    expect(hidden.body).toHaveLength(1);
+    expect(hidden.body[0]).toMatchObject({ name: 'Suspicious Listing Here', ownerUsername: 'listing_owner' });
+  });
+
+  it('requires a reason to hide', async () => {
+    const listing = await createListing(await createUser());
+    const res = await (await adminAgent()).post(`/api/admin/listings/${listing._id}/hide`).send({ reason: ' ' });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Please give a reason');
+  });
+
+  it('un-hides a listing', async () => {
+    const listing = await createListing(await createUser(), { hidden: true, hiddenReason: 'x', hiddenBy: 'moderation' });
+    const agent = await adminAgent();
+
+    const res = await agent.post(`/api/admin/listings/${listing._id}/unhide`);
+
+    expect(res.body).toMatchObject({ hidden: false, hiddenReason: '', hiddenBy: null });
+    expect((await api().get(`/api/listing/get/${listing._id}`)).status).toBe(200);
+  });
+
+  it('returns 404 for a missing listing', async () => {
+    const agent = await adminAgent();
+    expect((await agent.post('/api/admin/listings/0123456789abcdef01234567/unhide')).status).toBe(404);
+  });
+
+  it('is not available to regular users', async () => {
+    const listing = await createListing(await createUser());
+    const user = await signedInAgent(await createUser());
+    expect((await user.post(`/api/admin/listings/${listing._id}/hide`).send({ reason: 'x' })).status).toBe(403);
+  });
+});
