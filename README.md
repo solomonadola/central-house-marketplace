@@ -10,6 +10,7 @@ Central House Marketplace is a platform where you can find houses for rent and s
 - See how many times each of your listings has been viewed
 - Rate and review listings you've enquired about, and see ratings on listing cards
 - Report suspicious or inaccurate listings
+- Admin dashboard: site statistics, a reports queue, hiding listings, and suspending users
 - Create, edit and delete your own listings with up to 6 photos
 - Email/password and Google sign-in, with email confirmation and password reset
 - Message listing owners in the app, with an inbox, unread badges and live updates (email addresses stay private)
@@ -70,6 +71,17 @@ This creates 4 demo users (with confirmed emails), 20 listings in San Francisco 
 
 Password reset and email confirmation send email through `SMTP_URL` (any SMTP provider: Gmail, Resend, SendGrid, Mailgun, ...). Without it, emails are printed to the API server's console, so you can copy the links while developing. See `.env.example`.
 
+### Admins
+
+There's no way to become an admin through the app. Grant or remove admin rights from the command line:
+
+```bash
+npm run make-admin -- someone@example.com
+npm run make-admin -- someone@example.com --remove
+```
+
+The demo data includes an admin account: `admin@demo.centralhouse.local` / `password123`.
+
 ### 4. Run the app
 
 In two terminals:
@@ -112,6 +124,7 @@ CI runs all of the above, plus the client production build, on every pull reques
 | `npm start`                   | Start the API (and serve `client/dist`)       |
 | `npm run build`               | Install all dependencies and build the client |
 | `npm run seed`                | Reset the demo users and listings             |
+| `npm run make-admin -- <email>` | Grant admin rights (`--remove` to revoke)   |
 | `npm test`                    | Run the API tests                             |
 | `npm test --prefix client`    | Run the client tests                          |
 | `npm run dev --prefix client` | Start the Vite dev server                     |
@@ -176,6 +189,20 @@ All responses are JSON. Errors have the shape `{ success: false, statusCode, mes
 | GET    | `/api/reviews/owner/:id`    | A landlord's average rating across their listings |
 | POST   | `/api/reports` 🔒           | Report a listing (`listingId`, `reason`, `details`) |
 
+Admin routes (🛡 admins only):
+
+| Method | Route                       | Description                                       |
+| ------ | --------------------------- | ------------------------------------------------- |
+| GET    | `/api/admin/stats` 🛡       | Site statistics                                   |
+| GET    | `/api/admin/reports` 🛡     | Reports queue (`?status=open\|resolved\|dismissed\|all`) |
+| PATCH  | `/api/admin/reports/:id` 🛡 | Set a report's `status`                          |
+| GET    | `/api/admin/listings/hidden` 🛡 | Hidden listings                              |
+| POST   | `/api/admin/listings/:id/hide` 🛡 | Hide a listing (`reason`); resolves its open reports |
+| POST   | `/api/admin/listings/:id/unhide` 🛡 | Make a hidden listing public again          |
+| GET    | `/api/admin/users` 🛡       | Search users (`?search=`, `?suspended=true`)      |
+| POST   | `/api/admin/users/:id/suspend` 🛡 | Suspend a user (`reason`) and hide their listings |
+| POST   | `/api/admin/users/:id/unsuspend` 🛡 | Reinstate a user and restore their listings |
+
 Search query parameters: `searchTerm`, `type` (`rent` / `sale` / `all`), `offer`, `parking`, `furnished` (`true` to require), `minPrice` / `maxPrice` (compared against the discounted price for offers), `minBedrooms`, `minBathrooms`, `sort` (`createdAt` / `regularPrice`), `order` (`asc` / `desc`), `limit` (1-50, default 9), `startIndex`. The response body is an array of listings; the `X-Total-Count` header gives the total number of matches.
 
 ### Security
@@ -188,6 +215,7 @@ Search query parameters: `searchTerm`, `type` (`rent` / `sale` / `all`), `offer`
 - Other users only see your username and avatar; your email and saved listings stay private.
 - Posting listings requires a confirmed email address. Reset and confirmation links use single-use random tokens, stored only as hashes, that expire after 1 and 24 hours.
 - Only users who have messaged a listing's owner can review that listing.
+- Every authenticated request re-checks the account: suspended users are signed out immediately, and resetting a password signs out all sessions (changing it signs out other devices).
 - Security headers are set with `helmet`.
 
 ## License
