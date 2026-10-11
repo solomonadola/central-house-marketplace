@@ -128,3 +128,10 @@ export const reportSchema = z.object({
   }),
   details: z.string().trim().max(1000, 'Details must be at most 1000 characters').optional().default(''),
 });
+
+export const forgotPasswordSchema = z.object({ email });
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset link is invalid'),
+  password: newPassword,
+});

@@ -12,6 +12,7 @@ export default defineConfig({
       AUTH_RATE_LIMIT: '1000',
       VIEW_RATE_LIMIT: '1000',
       MESSAGE_RATE_LIMIT: '1000',
+      EMAIL_RATE_LIMIT: '1000',
       // Never call the real geocoding service from tests.
       GEOCODING: 'off',
     },
