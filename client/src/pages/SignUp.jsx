@@ -33,7 +33,9 @@ export default function SignUp() {
       }
       setLoading(false);
       setError(null);
-      navigate('/sign-in');
+      navigate('/sign-in', {
+        state: { notice: 'Account created! We sent you a link to confirm your email address.' },
+      });
     } catch (error) {
       setLoading(false);
       setError(error.message);

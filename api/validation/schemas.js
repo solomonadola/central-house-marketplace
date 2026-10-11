@@ -106,3 +106,36 @@ export const startConversationSchema = z.object({
 export const sendMessageSchema = z.object({
   body: messageBody,
 });
+
+export const reviewSchema = z.object({
+  // Coerce form strings, but leave a missing rating missing so it's
+  // reported as required rather than as NaN.
+  rating: z.preprocess(
+    (v) => (v === undefined || v === '' ? undefined : Number(v)),
+    z
+      .number({ invalid_type_error: 'Rating must be a number', required_error: 'Rating is required' })
+      .int('Rating must be a whole number')
+      .min(1, 'Rating must be between 1 and 5')
+      .max(5, 'Rating must be between 1 and 5')
+  ),
+  comment: z.string().trim().max(1000, 'Review must be at most 1000 characters').optional().default(''),
+});
+
+export const reportSchema = z.object({
+  listingId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid listing id'),
+  reason: z.enum(['scam', 'inaccurate', 'inappropriate', 'unavailable', 'other'], {
+    errorMap: () => ({ message: 'Please choose a reason' }),
+  }),
+  details: z.string().trim().max(1000, 'Details must be at most 1000 characters').optional().default(''),
+});
+
+export const forgotPasswordSchema = z.object({ email });
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset link is invalid'),
+  password: newPassword,
+});
+
+export const verifyEmailSchema = z.object({
+  token: z.string().min(1, 'Confirmation link is invalid'),
+});

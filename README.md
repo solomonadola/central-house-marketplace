@@ -8,8 +8,10 @@ Central House Marketplace is a platform where you can find houses for rent and s
 - See search results and individual listings on a map (addresses are geocoded with OpenStreetMap)
 - Save listings to favorites and find them on the Saved page
 - See how many times each of your listings has been viewed
+- Rate and review listings you've enquired about, and see ratings on listing cards
+- Report suspicious or inaccurate listings
 - Create, edit and delete your own listings with up to 6 photos
-- Email/password and Google sign-in
+- Email/password and Google sign-in, with email confirmation and password reset
 - Message listing owners in the app, with an inbox, unread badges and live updates (email addresses stay private)
 - Profile management with avatar upload
 
@@ -62,7 +64,11 @@ npm install --prefix client
 npm run seed
 ```
 
-This creates 4 demo users, 20 listings in San Francisco neighbourhoods, and a few sample conversations. Sign in with `sarah_homes@demo.centralhouse.local` / `password123`. Re-running the command only replaces the demo data and never touches other accounts.
+This creates 4 demo users (with confirmed emails), 20 listings in San Francisco neighbourhoods, and a few sample conversations and reviews. Sign in with `sarah_homes@demo.centralhouse.local` / `password123`. Re-running the command only replaces the demo data and never touches other accounts.
+
+### Email
+
+Password reset and email confirmation send email through `SMTP_URL` (any SMTP provider: Gmail, Resend, SendGrid, Mailgun, ...). Without it, emails are printed to the API server's console, so you can copy the links while developing. See `.env.example`.
 
 ### 4. Run the app
 
@@ -142,6 +148,10 @@ All responses are JSON. Errors have the shape `{ success: false, statusCode, mes
 | POST   | `/api/auth/signin`          | Sign in with email and password                   |
 | POST   | `/api/auth/google`          | Sign in with a Firebase Google ID token (`idToken`) |
 | GET    | `/api/auth/signout`         | Clear the auth cookie                             |
+| POST   | `/api/auth/forgot-password` | Email a password reset link (`email`)             |
+| POST   | `/api/auth/reset-password`  | Set a new password (`token`, `password`)          |
+| POST   | `/api/auth/verify-email`    | Confirm an email address (`token`)                |
+| POST   | `/api/auth/resend-verification` 🔒 | Send a new confirmation link               |
 | GET    | `/api/user/favorites` 🔒    | List your saved listings                          |
 | PUT    | `/api/user/favorites/:id` 🔒 | Save a listing                                   |
 | DELETE | `/api/user/favorites/:id` 🔒 | Remove a saved listing                           |
@@ -160,6 +170,11 @@ All responses are JSON. Errors have the shape `{ success: false, statusCode, mes
 | GET    | `/api/messages/conversations/:id` 🔒 | Latest 50 messages (`?before=<date>` for older); marks read |
 | POST   | `/api/messages/conversations/:id/messages` 🔒 | Reply in a conversation (`body`) |
 | GET    | `/api/messages/unread-count` 🔒 | Number of conversations with unread messages |
+| GET    | `/api/reviews/listing/:id`  | A listing's reviews and rating; for signed-in users, whether they can review |
+| POST   | `/api/reviews/listing/:id` 🔒 | Create or update your review (`rating` 1-5, `comment`) |
+| DELETE | `/api/reviews/:id` 🔒       | Delete your review                                |
+| GET    | `/api/reviews/owner/:id`    | A landlord's average rating across their listings |
+| POST   | `/api/reports` 🔒           | Report a listing (`listingId`, `reason`, `details`) |
 
 Search query parameters: `searchTerm`, `type` (`rent` / `sale` / `all`), `offer`, `parking`, `furnished` (`true` to require), `minPrice` / `maxPrice` (compared against the discounted price for offers), `minBedrooms`, `minBathrooms`, `sort` (`createdAt` / `regularPrice`), `order` (`asc` / `desc`), `limit` (1-50, default 9), `startIndex`. The response body is an array of listings; the `X-Total-Count` header gives the total number of matches.
 
@@ -171,6 +186,8 @@ Search query parameters: `searchTerm`, `type` (`rent` / `sale` / `all`), `offer`
 - Failed auth attempts are rate-limited to 10 per IP per 15 minutes.
 - Messages are rate-limited to 30 per IP per minute, and listing views to 60 per IP per hour.
 - Other users only see your username and avatar; your email and saved listings stay private.
+- Posting listings requires a confirmed email address. Reset and confirmation links use single-use random tokens, stored only as hashes, that expire after 1 and 24 hours.
+- Only users who have messaged a listing's owner can review that listing.
 - Security headers are set with `helmet`.
 
 ## License

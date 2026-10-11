@@ -4,7 +4,11 @@ import { errorHandler } from '../utils/error.js';
 import Listing from '../models/listing.model.js';
 import Conversation from '../models/conversation.model.js';
 import Message from '../models/message.model.js';
+import Review from '../models/review.model.js';
+import Report from '../models/report.model.js';
+import { updateListingRating } from '../utils/ratings.js';
 import { clearAuthCookie } from '../utils/authCookie.js';
+import { sendVerificationEmail } from '../utils/emailVerification.js';
 
 export const test = (req, res) => {
   res.json({
@@ -20,6 +24,11 @@ export const updateUser = async (req, res, next) => {
       req.body.password = bcryptjs.hashSync(req.body.password, 10);
     }
 
+    const current = await User.findById(req.params.id, 'email');
+    if (!current) return next(errorHandler(404, 'User not found!'));
+    // A new address has to be confirmed again.
+    const emailChanged = req.body.email !== undefined && req.body.email !== current.email;
+
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       {
@@ -28,10 +37,12 @@ export const updateUser = async (req, res, next) => {
           email: req.body.email,
           password: req.body.password,
           avatar: req.body.avatar,
+          ...(emailChanged && { emailVerified: false }),
         },
       },
       { new: true }
     );
+    if (emailChanged) await sendVerificationEmail(updatedUser);
 
     const { password, ...rest } = updatedUser._doc;
 
@@ -52,6 +63,13 @@ export const deleteUser = async (req, res, next) => {
       { favorites: { $in: listingIds } },
       { $pull: { favorites: { $in: listingIds } } }
     );
+    // Reviews on the deleted listings go with them; the user's reviews of
+    // other listings are removed and those ratings recalculated.
+    await Review.deleteMany({ listing: { $in: listingIds } });
+    const reviewedListings = await Review.find({ author: req.params.id }).distinct('listing');
+    await Review.deleteMany({ author: req.params.id });
+    await Report.deleteMany({ reporter: req.params.id });
+    await Promise.all(reviewedListings.map(updateListingRating));
     const conversationIds = await Conversation.find({ 'participants.user': req.params.id }).distinct('_id');
     await Message.deleteMany({ conversation: { $in: conversationIds } });
     await Conversation.deleteMany({ _id: { $in: conversationIds } });

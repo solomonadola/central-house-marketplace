@@ -5,6 +5,8 @@ import User from './models/user.model.js';
 import Listing from './models/listing.model.js';
 import Conversation from './models/conversation.model.js';
 import Message from './models/message.model.js';
+import Review from './models/review.model.js';
+import { updateListingRating } from './utils/ratings.js';
 dotenv.config();
 
 // Seed data is tagged by this email domain so re-running the script only
@@ -85,6 +87,14 @@ const listings = [
 
 const pick = (arr, i) => arr[i % arr.length];
 
+// Sample reviews: [author index, listing index, rating, comment]. Authors
+// have a conversation about the listing (see below), as the app requires.
+const reviews = [
+  [1, 0, 5, 'Sarah answered all my questions within the hour and the house is exactly as pictured.'],
+  [3, 4, 4, 'Great apartment and the parking space is a real bonus. Slightly noisy on weekends.'],
+  [0, 2, 5, 'Stunning villa and Maria was very helpful.'],
+];
+
 // Sample conversations: [buyer index, listing index, messages as
 // [sender: 'buyer' | 'owner', text, minutes ago], read by both?]. Listing i is owned by
 // user i % 4, so Sarah (user 0) owns listings 0, 4, 8, ...
@@ -111,6 +121,7 @@ const seed = async () => {
 
   const oldUsers = await User.find({ email: { $regex: `${SEED_DOMAIN}$` } });
   const oldIds = oldUsers.map((u) => u._id.toString());
+  await Review.deleteMany({ author: { $in: oldIds } });
   const oldConversations = await Conversation.find({ 'participants.user': { $in: oldIds } }).distinct('_id');
   await Message.deleteMany({ conversation: { $in: oldConversations } });
   await Conversation.deleteMany({ _id: { $in: oldConversations } });
@@ -120,7 +131,7 @@ const seed = async () => {
 
   const password = bcryptjs.hashSync(SEED_PASSWORD, 10);
   const createdUsers = await User.insertMany(
-    users.map((u) => ({ ...u, email: `${u.username}${SEED_DOMAIN}`, password }))
+    users.map((u) => ({ ...u, email: `${u.username}${SEED_DOMAIN}`, emailVerified: true, password }))
   );
 
   const now = Date.now();
@@ -181,8 +192,19 @@ const seed = async () => {
     );
   }
 
+  for (const [authorIndex, listingIndex, rating, comment] of reviews) {
+    await Review.create({
+      listing: createdListings[listingIndex]._id,
+      author: createdUsers[authorIndex]._id,
+      rating,
+      comment,
+    });
+    await updateListingRating(createdListings[listingIndex]._id);
+  }
+
   console.log(
-    `Created ${createdUsers.length} demo users, ${docs.length} listings and ${conversations.length} conversations`
+    `Created ${createdUsers.length} demo users, ${docs.length} listings, ` +
+      `${conversations.length} conversations and ${reviews.length} reviews`
   );
   console.log(`Demo login: ${createdUsers[0].email} / ${SEED_PASSWORD}`);
 };

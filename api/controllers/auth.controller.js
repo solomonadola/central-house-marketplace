@@ -3,6 +3,10 @@ import bcryptjs from 'bcryptjs';
 import { errorHandler } from '../utils/error.js';
 import { setAuthCookie, clearAuthCookie } from '../utils/authCookie.js';
 import { verifyFirebaseIdToken } from '../utils/firebase.js';
+import { createToken, hashToken } from '../utils/tokens.js';
+import { appUrl, sendMail } from '../utils/mailer.js';
+import { passwordResetEmail } from '../utils/emails.js';
+import { sendVerificationEmail } from '../utils/emailVerification.js';
 
 export const signup = async (req, res, next) => {
   const { username, email, password } = req.body;
@@ -10,6 +14,7 @@ export const signup = async (req, res, next) => {
   const newUser = new User({ username, email, password: hashedPassword });
   try {
     await newUser.save();
+    await sendVerificationEmail(newUser);
     res.status(201).json('User created successfully!');
   } catch (error) {
     next(error);
@@ -54,8 +59,12 @@ export const google = async (req, res, next) => {
   const photo = decoded.picture;
 
   try {
-    const user = await User.findOne({ email });
+    let user = await User.findOne({ email });
     if (user) {
+      // Google has verified this address.
+      if (!user.emailVerified) {
+        user = await User.findByIdAndUpdate(user._id, { emailVerified: true }, { new: true });
+      }
       const { password: pass, ...rest } = user._doc;
       setAuthCookie(res, user._id)
         .status(200)
@@ -70,6 +79,7 @@ export const google = async (req, res, next) => {
           name.split(' ').join('').toLowerCase() +
           Math.random().toString(36).slice(-4),
         email,
+        emailVerified: true,
         password: hashedPassword,
         avatar: photo,
       });
@@ -88,6 +98,82 @@ export const signOut = async (req, res, next) => {
   try {
     clearAuthCookie(res);
     res.status(200).json('User has been logged out!');
+  } catch (error) {
+    next(error);
+  }
+};
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+
+// Always responds the same way so it can't be used to find out which
+// emails have accounts.
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+    if (user) {
+      const { token, hash } = createToken();
+      await User.updateOne(
+        { _id: user._id },
+        { passwordResetTokenHash: hash, passwordResetExpires: new Date(Date.now() + RESET_TOKEN_TTL_MS) }
+      );
+      const url = `${appUrl()}/reset-password/${token}`;
+      try {
+        await sendMail({ to: user.email, ...passwordResetEmail({ username: user.username, url }) });
+      } catch (error) {
+        console.error('Could not send password reset email:', error.message);
+      }
+    }
+    res.status(200).json({ message: 'If an account exists for that email, we sent a link to reset the password.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+    const user = await User.findOneAndUpdate(
+      { passwordResetTokenHash: hashToken(token), passwordResetExpires: { $gt: new Date() } },
+      {
+        password: bcryptjs.hashSync(password, 10),
+        // Single use: clear the token once it's been used.
+        $unset: { passwordResetTokenHash: 1, passwordResetExpires: 1 },
+      }
+    );
+    if (!user) {
+      return next(errorHandler(400, 'This reset link is invalid or has expired. Please request a new one.'));
+    }
+    res.status(200).json({ message: 'Your password has been reset. You can now sign in.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const verifyEmail = async (req, res, next) => {
+  try {
+    const user = await User.findOneAndUpdate(
+      { emailVerifyTokenHash: hashToken(req.body.token), emailVerifyExpires: { $gt: new Date() } },
+      { emailVerified: true, $unset: { emailVerifyTokenHash: 1, emailVerifyExpires: 1 } },
+      { new: true }
+    );
+    if (!user) {
+      return next(errorHandler(400, 'This confirmation link is invalid or has expired.'));
+    }
+    const { password: pass, ...rest } = user._doc;
+    res.status(200).json(rest);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resendVerification = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return next(errorHandler(404, 'User not found!'));
+    if (user.emailVerified) return next(errorHandler(400, 'Your email is already confirmed.'));
+
+    await sendVerificationEmail(user);
+    res.status(200).json({ message: `We sent a new confirmation link to ${user.email}.` });
   } catch (error) {
     next(error);
   }
