@@ -8,13 +8,20 @@ const jsonResponse = (body, status = 200) => new Response(JSON.stringify(body), 
 
 describe('RequestViewing', () => {
   let fetchMock;
+  let viewingResponse;
 
   beforeEach(() => {
-    fetchMock = vi.fn(async () => jsonResponse({ _id: 'v1', status: 'pending' }, 201));
+    viewingResponse = { body: { _id: 'v1', status: 'pending' }, status: 201 };
+    fetchMock = vi.fn(async (url) => {
+      if (url.startsWith('/api/availability/')) return jsonResponse([]);
+      return jsonResponse(viewingResponse.body, viewingResponse.status);
+    });
     vi.stubGlobal('fetch', fetchMock);
   });
 
   afterEach(() => vi.unstubAllGlobals());
+
+  const viewingCall = () => fetchMock.mock.calls.find(([url]) => url === '/api/viewings');
 
   const openForm = async () => {
     renderWithProviders(<RequestViewing listingId='l1' />);
@@ -29,7 +36,7 @@ describe('RequestViewing', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send request' }));
 
     expect(await screen.findByText(/Viewing requested!/)).toBeInTheDocument();
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const body = JSON.parse(viewingCall()[1].body);
     expect(body).toEqual({
       listingId: 'l1',
       startsAt: new Date('2030-03-14T15:30').toISOString(),
@@ -45,18 +52,54 @@ describe('RequestViewing', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send request' }));
 
     expect(screen.getByText('Please choose a date and time.')).toBeInTheDocument();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(viewingCall()).toBeUndefined();
   });
 
   it('shows errors from the server', async () => {
-    fetchMock.mockResolvedValue(
-      jsonResponse({ success: false, message: 'You already have an upcoming viewing request for this listing.' }, 409)
-    );
+    viewingResponse = {
+      body: { success: false, message: 'You already have an upcoming viewing request for this listing.' },
+      status: 409,
+    };
     await openForm();
 
     fireEvent.change(screen.getByLabelText(/When would you like/), { target: { value: '2030-03-14T15:30' } });
     await userEvent.click(screen.getByRole('button', { name: 'Send request' }));
 
     expect(await screen.findByText(/already have an upcoming viewing request/)).toBeInTheDocument();
+  });
+
+  it('offers the owner availability slots instead of a free time picker', async () => {
+    const slotStart = new Date('2030-03-14T15:00:00Z').toISOString();
+    fetchMock = vi.fn(async (url) => {
+      if (url.startsWith('/api/availability/')) return jsonResponse([{ _id: 'slot1', startsAt: slotStart }]);
+      return jsonResponse({ _id: 'v1', status: 'pending' }, 201);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await openForm();
+
+    expect(screen.queryByLabelText(/When would you like/)).not.toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('radio'));
+    await userEvent.click(screen.getByRole('button', { name: 'Send request' }));
+
+    await screen.findByText(/Viewing requested!/);
+    expect(JSON.parse(viewingCall()[1].body).startsAt).toBe(slotStart);
+  });
+
+  it('requires a slot to be chosen when slots are offered', async () => {
+    fetchMock = vi.fn(async (url) => {
+      if (url.startsWith('/api/availability/')) {
+        return jsonResponse([{ _id: 'slot1', startsAt: new Date('2030-03-14T15:00:00Z').toISOString() }]);
+      }
+      return jsonResponse({ _id: 'v1' }, 201);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await openForm();
+    await screen.findByRole('radio');
+    await userEvent.click(screen.getByRole('button', { name: 'Send request' }));
+
+    expect(screen.getByText('Please choose one of the available times.')).toBeInTheDocument();
+    expect(viewingCall()).toBeUndefined();
   });
 });

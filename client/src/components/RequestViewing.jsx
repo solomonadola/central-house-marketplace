@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaCalendarAlt } from 'react-icons/fa';
 import { apiFetch } from '../utils/apiFetch';
@@ -9,6 +9,16 @@ const toLocalInputValue = (date) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
+// e.g. "Sat, Oct 18 at 10:00 AM" in the visitor's own time zone.
+const formatSlot = (date) =>
+  new Date(date).toLocaleString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
 export default function RequestViewing({ listingId }) {
   const [open, setOpen] = useState(false);
   const [startsAt, setStartsAt] = useState('');
@@ -16,11 +26,31 @@ export default function RequestViewing({ listingId }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
   const [requested, setRequested] = useState(false);
+  const [slots, setSlots] = useState([]);
+
+  // Owners can publish viewing slots; when they have, visitors pick one
+  // instead of choosing an arbitrary time.
+  useEffect(() => {
+    let active = true;
+    apiFetch(`/api/availability/${listingId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (active) setSlots(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (active) setSlots([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [listingId]);
+
+  const hasSlots = slots.length > 0;
 
   const submit = async (e) => {
     e.preventDefault();
     if (!startsAt) {
-      setError('Please choose a date and time.');
+      setError(hasSlots ? 'Please choose one of the available times.' : 'Please choose a date and time.');
       return;
     }
     setSending(true);
@@ -76,17 +106,44 @@ export default function RequestViewing({ listingId }) {
 
   return (
     <form onSubmit={submit} className='flex flex-col gap-2 rounded-lg bg-slate-50 p-3'>
-      <label htmlFor='viewing-time' className='label'>
-        When would you like to view it?
-      </label>
-      <input
-        id='viewing-time'
-        type='datetime-local'
-        value={startsAt}
-        min={toLocalInputValue(new Date())}
-        onChange={(e) => setStartsAt(e.target.value)}
-        className='input'
-      />
+      {hasSlots ? (
+        <fieldset>
+          <legend className='label'>Choose an available time</legend>
+          <div className='flex flex-col gap-2'>
+            {slots.map((slot) => (
+              <label
+                key={slot._id}
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                  startsAt === slot.startsAt ? 'border-brand-500 bg-brand-50 text-brand-800' : 'border-slate-200 bg-white'
+                }`}
+              >
+                <input
+                  type='radio'
+                  name='viewing-slot'
+                  className='sr-only'
+                  checked={startsAt === slot.startsAt}
+                  onChange={() => setStartsAt(slot.startsAt)}
+                />
+                {formatSlot(slot.startsAt)}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : (
+        <>
+          <label htmlFor='viewing-time' className='label'>
+            When would you like to view it?
+          </label>
+          <input
+            id='viewing-time'
+            type='datetime-local'
+            value={startsAt}
+            min={toLocalInputValue(new Date())}
+            onChange={(e) => setStartsAt(e.target.value)}
+            className='input'
+          />
+        </>
+      )}
       <textarea
         value={note}
         onChange={(e) => setNote(e.target.value)}
