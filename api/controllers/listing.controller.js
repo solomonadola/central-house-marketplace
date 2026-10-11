@@ -1,4 +1,5 @@
 import Listing from '../models/listing.model.js';
+import User from '../models/user.model.js';
 import { errorHandler } from '../utils/error.js';
 
 // Fields a client may set. Ownership (userRef) is always taken from the
@@ -48,6 +49,7 @@ export const deleteListing = async (req, res, next) => {
     }
 
     await Listing.findByIdAndDelete(req.params.id);
+    await User.updateMany({ favorites: listing._id }, { $pull: { favorites: listing._id } });
     res.status(200).json('Listing has been deleted!');
   } catch (error) {
     next(error);
