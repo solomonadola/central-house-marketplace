@@ -17,6 +17,8 @@ import { verifyToken } from '../utils/verifyUser.js';
 import { validateObjectId } from '../utils/validateObjectId.js';
 import { validate } from '../validation/validate.js';
 import { blockUser, getBlockStatus, listBlocked, unblockUser } from '../controllers/block.controller.js';
+import { exportMyData } from '../controllers/dataExport.controller.js';
+import { emailLimiter } from '../utils/rateLimit.js';
 import { updatePreferencesSchema, updateUserSchema } from '../validation/schemas.js';
 
 
@@ -33,6 +35,8 @@ router.get('/analytics/export', verifyToken, exportMyAnalytics)
 router.get('/favorites', verifyToken, getFavorites)
 router.put('/favorites/:id', verifyToken, addFavorite)
 router.delete('/favorites/:id', verifyToken, removeFavorite)
+// Rate-limited: an export reads every collection for the user.
+router.get('/export', verifyToken, emailLimiter, exportMyData)
 router.get('/blocks', verifyToken, listBlocked)
 router.get('/blocks/:id', verifyToken, getBlockStatus)
 router.put('/blocks/:id', verifyToken, blockUser)
