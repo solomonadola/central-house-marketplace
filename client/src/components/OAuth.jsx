@@ -1,4 +1,5 @@
 import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth';
+import { FcGoogle } from 'react-icons/fc';
 import { app } from '../firebase';
 import { useDispatch } from 'react-redux';
 import { signInSuccess } from '../redux/user/userSlice';
@@ -38,9 +39,9 @@ export default function OAuth() {
     <button
       onClick={handleGoogleClick}
       type='button'
-      className='bg-red-700 text-white p-3 rounded-lg uppercase hover:opacity-95'
+      className='btn-secondary w-full py-3'
     >
-      Continue with google
+      <FcGoogle className='h-5 w-5' aria-hidden='true' /> Continue with Google
     </button>
   );
 }
