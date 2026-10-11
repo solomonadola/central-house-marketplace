@@ -16,6 +16,7 @@ import PriceChange from '../models/priceChange.model.js';
 import ListingQuestion from '../models/listingQuestion.model.js';
 import OpenHouse from '../models/openHouse.model.js';
 import MaintenanceRequest from '../models/maintenanceRequest.model.js';
+import { comparePrice } from '../utils/priceComparison.js';
 import { dropFromPeak, recordInitialPrice, recordPriceChange } from '../utils/priceHistory.js';
 
 // Fields a client may set. Ownership (userRef) is always taken from the
@@ -399,6 +400,20 @@ export const getPriceHistory = async (req, res, next) => {
 
     const history = await PriceChange.find({ listing: listing._id }).sort({ createdAt: -1, _id: -1 }).limit(50).lean();
     res.status(200).json({ history, dropFromPeak: dropFromPeak(history) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// How this listing's price compares with similar homes.
+export const getPriceComparison = async (req, res, next) => {
+  try {
+    const listing = await Listing.findById(req.params.id, 'type bedrooms regularPrice discountPrice offer location hidden active userRef');
+    const canSeeHidden = req.user && (req.user.id === listing?.userRef || req.user.role === 'admin');
+    if (!listing || ((listing.hidden || listing.active === false) && !canSeeHidden)) {
+      return next(errorHandler(404, 'Listing not found!'));
+    }
+    res.status(200).json({ comparison: await comparePrice(listing) });
   } catch (error) {
     next(error);
   }
