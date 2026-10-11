@@ -18,6 +18,14 @@ const price = (label) =>
 const optional = (schema) =>
   z.preprocess((v) => (v === '' || v === null ? undefined : v), schema.optional());
 
+// z.string().url() accepts any scheme (javascript:, data:, ...). Image
+// URLs end up in <img src> and CSS url(), so only allow http(s).
+const httpUrl = (message) =>
+  z
+    .string()
+    .url(message)
+    .refine((v) => /^https?:\/\//i.test(v), message);
+
 const username = z
   .string()
   .trim()
@@ -47,7 +55,7 @@ export const updateUserSchema = z.object({
   username: optional(username),
   email: optional(email),
   password: optional(newPassword),
-  avatar: optional(z.string().url('Avatar must be a URL')),
+  avatar: optional(httpUrl('Avatar must be a URL')),
 });
 
 const listingFields = {
@@ -63,7 +71,7 @@ const listingFields = {
   type: z.enum(['rent', 'sale'], { message: "Type must be 'rent' or 'sale'" }),
   offer: z.boolean(),
   imageUrls: z
-    .array(z.string().url('Image must be a URL'))
+    .array(httpUrl('Image must be a URL'))
     .min(1, 'You must upload at least one image')
     .max(6, 'You can upload at most 6 images'),
 };
