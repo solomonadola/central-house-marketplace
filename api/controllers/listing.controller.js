@@ -75,17 +75,23 @@ export const deleteListing = async (req, res, next) => {
     // Let everyone who saved it know before removing it from their favorites.
     const favoriters = await User.find({ favorites: listing._id }, '_id');
     await Promise.all(favoriters.map((u) => notifyListingDeleted({ recipient: u._id, listingName: listing.name })));
-    await User.updateMany({ favorites: listing._id }, { $pull: { favorites: listing._id } });
-    await Review.deleteMany({ listing: listing._id });
-    await Viewing.deleteMany({ listing: listing._id });
-    await AvailabilitySlot.deleteMany({ listing: listing._id });
-    await Application.deleteMany({ listing: listing._id });
-    await Payment.deleteMany({ listing: listing._id });
-    await ListingViewDay.deleteMany({ listing: listing._id });
-    await PriceChange.deleteMany({ listing: listing._id });
-    await ListingQuestion.deleteMany({ listing: listing._id });
-    await OpenHouse.deleteMany({ listing: listing._id });
-    await MaintenanceRequest.deleteMany({ listing: listing._id });
+    // The rest of the cleanup is independent, so run it in parallel.
+    const byListing = { listing: listing._id };
+    await Promise.all([
+      User.updateMany({ favorites: listing._id }, { $pull: { favorites: listing._id } }),
+      ...[
+        Review,
+        Viewing,
+        AvailabilitySlot,
+        Application,
+        Payment,
+        ListingViewDay,
+        PriceChange,
+        ListingQuestion,
+        OpenHouse,
+        MaintenanceRequest,
+      ].map((Model) => Model.deleteMany(byListing)),
+    ]);
     res.status(200).json('Listing has been deleted!');
   } catch (error) {
     next(error);

@@ -70,35 +70,42 @@ export const deleteUser = async (req, res, next) => {
   if (req.user.id !== req.params.id)
     return next(errorHandler(401, 'You can only delete your own account!'));
   try {
-    await User.findByIdAndDelete(req.params.id);
-    const listingIds = await Listing.find({ userRef: req.params.id }).distinct('_id');
-    await Listing.deleteMany({ _id: { $in: listingIds } });
-    await ListingViewDay.deleteMany({ listing: { $in: listingIds } });
-    await PriceChange.deleteMany({ listing: { $in: listingIds } });
-    // Questions on their listings, and questions they asked elsewhere.
-    await ListingQuestion.deleteMany({ $or: [{ listing: { $in: listingIds } }, { asker: req.params.id }] });
-    await OpenHouse.deleteMany({ listing: { $in: listingIds } });
-    await OpenHouse.updateMany({ 'rsvps.user': req.params.id }, { $pull: { rsvps: { user: req.params.id } } });
-    await MaintenanceRequest.deleteMany({ $or: [{ tenant: req.params.id }, { owner: req.params.id }] });
-    await User.updateMany(
-      { favorites: { $in: listingIds } },
-      { $pull: { favorites: { $in: listingIds } } }
-    );
-    // Reviews on the deleted listings go with them; the user's reviews of
-    // other listings are removed and those ratings recalculated.
-    await Review.deleteMany({ listing: { $in: listingIds } });
-    const reviewedListings = await Review.find({ author: req.params.id }).distinct('listing');
-    await Review.deleteMany({ author: req.params.id });
-    await Report.deleteMany({ reporter: req.params.id });
-    await Viewing.deleteMany({ $or: [{ requester: req.params.id }, { owner: req.params.id }] });
-    await AvailabilitySlot.deleteMany({ owner: req.params.id });
-    await Application.deleteMany({ $or: [{ applicant: req.params.id }, { owner: req.params.id }] });
-    await Payment.deleteMany({ $or: [{ payer: req.params.id }, { payee: req.params.id }] });
-    await Notification.deleteMany({ recipient: req.params.id });
+    const userId = req.params.id;
+    await User.findByIdAndDelete(userId);
+
+    // Look up what the cleanup depends on before deleting anything.
+    const [listingIds, reviewedListings, conversationIds] = await Promise.all([
+      Listing.find({ userRef: userId }).distinct('_id'),
+      // Listings this user reviewed, whose ratings change once the reviews go.
+      Review.find({ author: userId }).distinct('listing'),
+      Conversation.find({ 'participants.user': userId }).distinct('_id'),
+    ]);
+    const onTheirListings = { listing: { $in: listingIds } };
+
+    // Everything below is independent, so it runs in parallel.
+    await Promise.all([
+      Listing.deleteMany({ _id: { $in: listingIds } }),
+      ListingViewDay.deleteMany(onTheirListings),
+      PriceChange.deleteMany(onTheirListings),
+      OpenHouse.deleteMany(onTheirListings),
+      // Questions on their listings, and questions they asked elsewhere.
+      ListingQuestion.deleteMany({ $or: [onTheirListings, { asker: userId }] }),
+      OpenHouse.updateMany({ 'rsvps.user': userId }, { $pull: { rsvps: { user: userId } } }),
+      MaintenanceRequest.deleteMany({ $or: [{ tenant: userId }, { owner: userId }] }),
+      User.updateMany({ favorites: { $in: listingIds } }, { $pull: { favorites: { $in: listingIds } } }),
+      // Reviews on their listings, and reviews they wrote elsewhere.
+      Review.deleteMany({ $or: [onTheirListings, { author: userId }] }),
+      Report.deleteMany({ reporter: userId }),
+      Viewing.deleteMany({ $or: [{ requester: userId }, { owner: userId }] }),
+      AvailabilitySlot.deleteMany({ owner: userId }),
+      Application.deleteMany({ $or: [{ applicant: userId }, { owner: userId }] }),
+      Payment.deleteMany({ $or: [{ payer: userId }, { payee: userId }] }),
+      Notification.deleteMany({ recipient: userId }),
+      Message.deleteMany({ conversation: { $in: conversationIds } }),
+      Conversation.deleteMany({ _id: { $in: conversationIds } }),
+    ]);
+
     await Promise.all(reviewedListings.map(updateListingRating));
-    const conversationIds = await Conversation.find({ 'participants.user': req.params.id }).distinct('_id');
-    await Message.deleteMany({ conversation: { $in: conversationIds } });
-    await Conversation.deleteMany({ _id: { $in: conversationIds } });
     clearAuthCookie(res);
     res.status(200).json('User has been deleted!');
   } catch (error) {
