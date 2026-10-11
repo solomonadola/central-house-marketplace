@@ -1,8 +1,10 @@
 import express from 'express';
 import {
+  exportConversations,
   getConversation,
   getUnreadCount,
   listConversations,
+  markAllRead,
   sendMessage,
   startConversation,
 } from '../controllers/message.controller.js';
@@ -18,8 +20,10 @@ router.param('id', validateObjectId);
 router.use(verifyToken);
 
 router.get('/conversations', listConversations);
+router.get('/conversations/export', exportConversations);
 router.get('/conversations/:id', getConversation);
 router.get('/unread-count', getUnreadCount);
+router.post('/read-all', markAllRead);
 router.post('/conversations', messageLimiter, validate(startConversationSchema), startConversation);
 router.post('/conversations/:id/messages', messageLimiter, validate(sendMessageSchema), sendMessage);
 
