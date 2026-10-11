@@ -18,6 +18,7 @@ import Contact from '../components/Contact';
 import FavoriteButton from '../components/FavoriteButton';
 import ListingsMap from '../components/ListingsMap';
 import ListingReviews from '../components/ListingReviews';
+import ReportListing from '../components/ReportListing';
 import { apiFetch } from '../utils/apiFetch';
 import { recordView } from '../utils/recordView';
 
@@ -172,6 +173,7 @@ export default function Listing() {
               </section>
             )}
             <ListingReviews listingId={listing._id} />
+            {currentUser && !isOwner && <ReportListing listingId={listing._id} />}
           </div>
         </div>
       )}
