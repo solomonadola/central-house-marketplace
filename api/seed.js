@@ -6,6 +6,7 @@ import Listing from './models/listing.model.js';
 import Conversation from './models/conversation.model.js';
 import Message from './models/message.model.js';
 import Review from './models/review.model.js';
+import Viewing from './models/viewing.model.js';
 import { updateListingRating } from './utils/ratings.js';
 dotenv.config();
 
@@ -122,6 +123,7 @@ const seed = async () => {
   const oldUsers = await User.find({ email: { $regex: `${SEED_DOMAIN}$` } });
   const oldIds = oldUsers.map((u) => u._id.toString());
   await Review.deleteMany({ author: { $in: oldIds } });
+  await Viewing.deleteMany({ $or: [{ requester: { $in: oldIds } }, { owner: { $in: oldIds } }] });
   const oldConversations = await Conversation.find({ 'participants.user': { $in: oldIds } }).distinct('_id');
   await Message.deleteMany({ conversation: { $in: oldConversations } });
   await Conversation.deleteMany({ _id: { $in: oldConversations } });
@@ -211,6 +213,31 @@ const seed = async () => {
     });
     await updateListingRating(createdListings[listingIndex]._id);
   }
+
+  // Sample viewings: a pending request on Sarah's listing, and one Sarah
+  // made that Maria accepted. Times are at 10:00 / 17:30 a few days out.
+  const atHour = (daysAhead, hours, minutes = 0) => {
+    const d = new Date(now + daysAhead * 24 * 60 * 60 * 1000);
+    d.setHours(hours, minutes, 0, 0);
+    return d;
+  };
+  await Viewing.insertMany([
+    {
+      listing: createdListings[0]._id,
+      requester: createdUsers[1]._id,
+      owner: createdUsers[0]._id,
+      startsAt: atHour(3, 10),
+      note: 'Saturday morning works best for me.',
+    },
+    {
+      listing: createdListings[2]._id,
+      requester: createdUsers[0]._id,
+      owner: createdUsers[2]._id,
+      startsAt: atHour(5, 17, 30),
+      status: 'accepted',
+      responseNote: 'See you then! Park in the driveway.',
+    },
+  ]);
 
   console.log(
     `Created ${createdUsers.length} demo users, ${docs.length} listings, ` +
