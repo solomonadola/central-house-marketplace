@@ -1,11 +1,14 @@
-import { FaCalendarAlt, FaEnvelope, FaHeart, FaPlus, FaSearch } from 'react-icons/fa';
+import { FaCalendarAlt, FaEnvelope, FaFileAlt, FaHeart, FaPlus, FaSearch } from 'react-icons/fa';
 import Logo from './Logo';
+import NotificationBell from './NotificationBell';
 import { useUnreadCountPolling } from '../hooks/useUnreadCount';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
+import { useTranslation } from '../i18n/context';
 
 export default function Header() {
+  const { t } = useTranslation();
   const { currentUser } = useSelector((state) => state.user);
   const unreadCount = useSelector((state) => state.inbox.unreadCount);
   useUnreadCountPolling();
@@ -62,10 +65,13 @@ export default function Header() {
         </form>
         <nav className='ml-auto flex items-center gap-1' aria-label='Main'>
           <NavLink to='/search' className='btn-ghost hidden md:inline-flex'>
-            Browse
+            {t('nav.browse')}
+          </NavLink>
+          <NavLink to='/insights' className='btn-ghost hidden md:inline-flex'>
+            {t('nav.insights')}
           </NavLink>
           <NavLink to='/about' className='btn-ghost hidden md:inline-flex'>
-            About
+            {t('nav.about')}
           </NavLink>
           {currentUser?.role === 'admin' && (
             <NavLink to='/admin' className='btn-ghost'>
@@ -74,6 +80,7 @@ export default function Header() {
           )}
           {currentUser ? (
             <>
+              <NotificationBell />
               <Link
                 to='/messages'
                 aria-label={unreadCount > 0 ? `Messages, ${unreadCount} unread` : 'Messages'}
@@ -85,6 +92,9 @@ export default function Header() {
               </Link>
               <Link to='/viewings' aria-label='Viewings' title='Viewings' className={iconLink}>
                 <FaCalendarAlt className='h-5 w-5' />
+              </Link>
+              <Link to='/applications' aria-label='Applications' title='Applications' className={iconLink}>
+                <FaFileAlt className='h-5 w-5' />
               </Link>
               <Link to='/saved' aria-label='Saved listings' title='Saved listings' className={iconLink}>
                 <FaHeart className='h-5 w-5' />
@@ -104,10 +114,10 @@ export default function Header() {
           ) : (
             <>
               <Link to='/sign-in' className='btn-ghost'>
-                Sign in
+                {t('nav.signIn')}
               </Link>
               <Link to='/sign-up' className='btn-primary hidden sm:inline-flex'>
-                Sign up
+                {t('nav.signUp')}
               </Link>
             </>
           )}

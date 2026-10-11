@@ -106,4 +106,16 @@ describe('Listing page', () => {
     expect(await screen.findByRole('heading', { name: 'Listing not found' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Browse other homes' })).toHaveAttribute('href', '/search');
   });
+
+  it('shows similar homes', async () => {
+    fetchMock.mockImplementation(async (url) => {
+      if (url.endsWith('/similar')) return jsonResponse([makeListing({ _id: 's1', name: 'Similar Garden Cottage' })]);
+      if (url.startsWith('/api/reviews/')) return jsonResponse({ average: 0, count: 0, reviews: [], viewer: null });
+      return jsonResponse(makeListing({ userRef: 'owner1' }));
+    });
+    renderListing(null);
+
+    expect(await screen.findByRole('heading', { name: 'Similar homes' })).toBeInTheDocument();
+    expect(screen.getByText('Similar Garden Cottage')).toBeInTheDocument();
+  });
 });

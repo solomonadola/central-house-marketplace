@@ -13,18 +13,25 @@ import {
   FaCheck,
   FaEdit,
   FaEye,
+  FaHome,
   FaLink,
   FaMapMarkerAlt,
   FaParking,
 } from 'react-icons/fa';
 import Contact from '../components/Contact';
+import CompareButton from '../components/CompareButton';
 import FavoriteButton from '../components/FavoriteButton';
+import ApplyForm from '../components/ApplyForm';
+import ListingGrid from '../components/ListingGrid';
 import ListingsMap from '../components/ListingsMap';
 import ListingReviews from '../components/ListingReviews';
+import ListingAvailability from '../components/ListingAvailability';
 import ReportListing from '../components/ReportListing';
 import RequestViewing from '../components/RequestViewing';
 import { apiFetch } from '../utils/apiFetch';
 import { recordView } from '../utils/recordView';
+import { recordRecentlyViewed } from '../hooks/useRecentlyViewed';
+import { amenityLabels, propertyTypeLabel } from '../utils/listingDetails';
 
 // https://sabe.io/blog/javascript-format-numbers-commas#:~:text=The%20best%20way%20to%20format,format%20the%20number%20with%20commas.
 
@@ -35,6 +42,7 @@ export default function Listing() {
   const [error, setError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [contact, setContact] = useState(false);
+  const [similar, setSimilar] = useState([]);
   const params = useParams();
   const { currentUser } = useSelector((state) => state.user);
 
@@ -63,8 +71,27 @@ export default function Listing() {
   const isOwner = Boolean(listing && currentUser && listing.userRef === currentUser._id);
 
   useEffect(() => {
-    if (listing && !isOwner) recordView(listing._id);
+    if (listing && !isOwner) {
+      recordView(listing._id);
+      recordRecentlyViewed(listing._id);
+    }
   }, [listing, isOwner]);
+
+  useEffect(() => {
+    if (!listing) return undefined;
+    let active = true;
+    apiFetch(`/api/listing/${listing._id}/similar`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (active && Array.isArray(data)) setSimilar(data);
+      })
+      .catch(() => {
+        // A missing similar section shouldn't break the page.
+      });
+    return () => {
+      active = false;
+    };
+  }, [listing]);
 
   const copyLink = async () => {
     try {
@@ -97,6 +124,7 @@ export default function Listing() {
   const perMonth = listing.type === 'rent' ? ' / month' : '';
 
   const facts = [
+    [FaHome, propertyTypeLabel(listing.propertyType ?? 'apartment')],
     [FaBed, listing.bedrooms > 1 ? `${listing.bedrooms} beds` : `${listing.bedrooms} bed`],
     [FaBath, listing.bathrooms > 1 ? `${listing.bathrooms} baths` : `${listing.bathrooms} bath`],
     [FaParking, listing.parking ? 'Parking spot' : 'No parking'],
@@ -114,6 +142,13 @@ export default function Listing() {
           This listing is hidden from the public
           {listing.hiddenReason ? `: ${listing.hiddenReason}` : '.'}{' '}
           {isOwner && 'Contact support if you think this is a mistake.'}
+        </p>
+      )}
+
+      {listing.active === false && (
+        <p role='status' className='mt-4 rounded-lg bg-slate-100 p-3 text-slate-700'>
+          This listing is paused and hidden from search.
+          {isOwner && ' Reactivate it from your account page to make it visible again.'}
         </p>
       )}
 
@@ -151,6 +186,12 @@ export default function Listing() {
               <FaMapMarkerAlt className='shrink-0 text-brand-600' aria-hidden='true' />
               {listing.address}
             </p>
+            <Link
+              to={`/owner/${listing.userRef}`}
+              className='mt-2 inline-block text-sm font-medium text-brand-700 hover:underline'
+            >
+              View owner profile
+            </Link>
           </section>
 
           <ul className='grid grid-cols-2 gap-3 sm:grid-cols-4'>
@@ -161,6 +202,19 @@ export default function Listing() {
               </li>
             ))}
           </ul>
+
+          {listing.amenities?.length > 0 && (
+            <section>
+              <h2 className='text-xl font-semibold text-slate-900'>Amenities</h2>
+              <ul className='mt-3 flex flex-wrap gap-2'>
+                {amenityLabels(listing.amenities).map((label) => (
+                  <li key={label} className='badge bg-slate-100 text-slate-700 ring-1 ring-slate-200'>
+                    {label}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
 
         <aside className='lg:col-start-3 lg:row-span-2 lg:row-start-1'>
@@ -183,6 +237,7 @@ export default function Listing() {
 
             <div className='flex gap-2'>
               <FavoriteButton listingId={listing._id} className='shrink-0 border border-slate-200' />
+              <CompareButton listingId={listing._id} className='shrink-0 h-10 w-10 border border-slate-200' />
               <button type='button' onClick={copyLink} className='btn-secondary flex-1'>
                 {copied ? (
                   <>
@@ -207,6 +262,7 @@ export default function Listing() {
                 <Link to={`/update-listing/${listing._id}`} className='btn-primary'>
                   <FaEdit aria-hidden='true' /> Edit listing
                 </Link>
+                <ListingAvailability listingId={listing._id} />
               </div>
             )}
 
@@ -220,6 +276,7 @@ export default function Listing() {
                   </button>
                 )}
                 {!listing.hidden && <RequestViewing listingId={listing._id} />}
+                {!listing.hidden && <ApplyForm listingId={listing._id} listingType={listing.type} />}
               </div>
             )}
 
@@ -252,6 +309,17 @@ export default function Listing() {
         </div>
 
       </div>
+
+      {similar.length > 0 && (
+        <section className='mt-10' aria-labelledby='similar-title'>
+          <h2 id='similar-title' className='text-xl font-semibold text-slate-900'>
+            Similar homes
+          </h2>
+          <div className='mt-4'>
+            <ListingGrid listings={similar} columns='sm:grid-cols-2 xl:grid-cols-3' />
+          </div>
+        </section>
+      )}
     </main>
   );
 }

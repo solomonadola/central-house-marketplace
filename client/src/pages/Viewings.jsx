@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { FaDownload } from 'react-icons/fa';
 import { useFetchJson } from '../hooks/useFetchJson';
 import { apiFetch } from '../utils/apiFetch';
+import { downloadCsv } from '../utils/downloadCsv';
 
 const STATUS_STYLES = {
   pending: 'bg-amber-100 text-amber-800',
@@ -96,6 +98,16 @@ export default function Viewings() {
   const [searchParams, setSearchParams] = useSearchParams();
   const asOwner = searchParams.get('as') === 'owner';
   const { data, error, loading, reload } = useFetchJson(`/api/viewings${asOwner ? '?as=owner' : ''}`);
+  const [exporting, setExporting] = useState(false);
+
+  const exportCalendar = async () => {
+    setExporting(true);
+    try {
+      await downloadCsv(`/api/viewings/export${asOwner ? '?as=owner' : ''}`, 'viewings.ics');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const now = new Date();
   const upcoming = (data ?? []).filter((v) => new Date(v.startsAt) > now).reverse();
@@ -116,6 +128,9 @@ export default function Viewings() {
   return (
     <main className='max-w-3xl mx-auto p-3 flex flex-col gap-5'>
       <h1 className='text-3xl font-semibold text-slate-700 mt-5'>Viewings</h1>
+      <button type='button' onClick={exportCalendar} disabled={exporting} className='btn-secondary self-start text-sm'>
+        <FaDownload className='h-3 w-3' aria-hidden='true' /> {exporting ? 'Exporting...' : 'Add to calendar'}
+      </button>
       <nav className='flex gap-2 border-b' role='tablist'>
         {[
           [false, 'My requests'],

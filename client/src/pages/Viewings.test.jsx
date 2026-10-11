@@ -32,7 +32,10 @@ describe('Viewings page', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
   it('splits my requests into upcoming and past', async () => {
     renderWithProviders(<Viewings />, { route: '/viewings' });
@@ -76,5 +79,17 @@ describe('Viewings page', () => {
     data = [];
     renderWithProviders(<Viewings />, { route: '/viewings?as=owner' });
     expect(await screen.findByText(/Nobody has requested a viewing/)).toBeInTheDocument();
+  });
+
+  it('exports the viewings to a calendar file', async () => {
+    renderWithProviders(<Viewings />, { route: '/viewings' });
+    await screen.findByRole('heading', { name: 'Viewings' });
+    URL.createObjectURL = vi.fn(() => 'blob:mock');
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    await userEvent.click(screen.getByRole('button', { name: /Add to calendar/ }));
+
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/viewings/export')).toBe(true);
   });
 });
