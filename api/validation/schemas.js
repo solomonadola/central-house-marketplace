@@ -521,3 +521,12 @@ export const disputeInspectionSchema = z.object({
     .min(10, 'Tell the owner what is wrong with the report (at least 10 characters)')
     .max(1000, 'Reason must be at most 1000 characters'),
 });
+
+export const flagContentSchema = z.object({
+  targetType: z.enum(['review', 'question'], { errorMap: () => ({ message: 'You can flag a review or a question' }) }),
+  targetId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid id'),
+  reason: z.enum(['spam', 'offensive', 'off_topic', 'personal_info', 'other'], {
+    errorMap: () => ({ message: 'Choose why you are flagging this' }),
+  }),
+  details: z.string().trim().max(500, 'Details must be at most 500 characters').optional().default(''),
+});

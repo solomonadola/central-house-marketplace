@@ -34,6 +34,7 @@ export const NOTIFICATION_TYPES = [
   'inspection_submitted',
   'inspection_signed',
   'inspection_disputed',
+  'content_removed',
 ];
 
 const notificationSchema = new mongoose.Schema(

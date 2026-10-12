@@ -10,9 +10,12 @@ export const AUDIT_ACTIONS = [
   'resolve_report',
   'dismiss_report',
   'reopen_report',
+  'remove_content',
+  'restore_content',
+  'dismiss_flags',
 ];
 
-export const AUDIT_TARGET_TYPES = ['listing', 'user', 'report'];
+export const AUDIT_TARGET_TYPES = ['listing', 'user', 'report', 'review', 'question'];
 
 const auditLogSchema = new mongoose.Schema(
   {

@@ -27,7 +27,7 @@ export const listQuestions = async (req, res, next) => {
     if (!listing) return next(errorHandler(404, 'Listing not found!'));
 
     const isOwner = req.user?.id === listing.userRef;
-    const filter = { listing: listing._id };
+    const filter = { listing: listing._id, removed: { $ne: true } };
     if (!isOwner) {
       filter.$or = [{ 'answer.body': { $exists: true } }, ...(req.user ? [{ asker: req.user.id }] : [])];
     }

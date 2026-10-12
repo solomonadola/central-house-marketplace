@@ -13,6 +13,11 @@ const reviewSchema = new mongoose.Schema(
     // The owner's public reply to the review.
     ownerReply: { type: String, trim: true, maxlength: 1000, default: '' },
     ownerRepliedAt: { type: Date, default: null },
+    // Set when an admin removes it after it was flagged. Removed content is
+    // kept (so it can be restored) but no longer shown or counted.
+    removed: { type: Boolean, default: false },
+    removedReason: { type: String, trim: true, maxlength: 500, default: '' },
+    removedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

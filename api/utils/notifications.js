@@ -330,3 +330,14 @@ export const notifyInspectionAnswered = ({ recipient, tenantName, kind, signed, 
     meta: { inspectionId },
     email: !signed,
   });
+
+export const notifyContentRemoved = ({ recipient, targetType, listingName, listingId, reason }) =>
+  notify({
+    recipient,
+    type: 'content_removed',
+    title: `Your ${targetType} on "${listingName}" was removed`,
+    body: reason ? `Reason: ${reason}` : 'It broke the community guidelines.',
+    link: `/listing/${listingId}`,
+    meta: { listingId, targetType },
+    email: true,
+  });

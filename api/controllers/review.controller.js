@@ -11,6 +11,18 @@ import { notifyNewReview } from '../utils/notifications.js';
 const hasContactedOwner = (listingId, userId) =>
   Conversation.exists({ listing: listingId, buyer: userId });
 
+// The viewer's own review, including one a moderator removed, so they can
+// see why it isn't public instead of thinking it was lost.
+const ownReview = async (shaped, listingId, userId) => {
+  const visible = shaped.find((r) => r.author?._id.toString() === userId);
+  if (visible) return visible;
+  const removed = await Review.findOne({ listing: listingId, author: userId, removed: true }, '-helpfulBy').populate(
+    'author',
+    'username avatar'
+  );
+  return removed ? removed.toObject() : null;
+};
+
 export const getListingReviews = async (req, res, next) => {
   try {
     const listing = await Listing.findById(req.params.id, 'userRef ratingAverage ratingCount');
@@ -26,7 +38,7 @@ export const getListingReviews = async (req, res, next) => {
             ? { rating: 1, createdAt: -1 }
             : { createdAt: -1 };
 
-    const reviews = await Review.find({ listing: listing._id })
+    const reviews = await Review.find({ listing: listing._id, removed: { $ne: true } })
       .sort(sort)
       .limit(100)
       .populate('author', 'username avatar');
@@ -48,7 +60,7 @@ export const getListingReviews = async (req, res, next) => {
       viewer = {
         canReview: !isOwner && Boolean(await hasContactedOwner(listing._id, req.user.id)),
         isOwner,
-        ownReview: shaped.find((r) => r.author?._id.toString() === req.user.id) ?? null,
+        ownReview: await ownReview(shaped, listing._id, req.user.id),
       };
     }
 
