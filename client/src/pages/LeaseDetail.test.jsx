@@ -87,7 +87,7 @@ describe('Lease page', () => {
     expect(screen.getByText('Rent goes to the account in your welcome email.')).toBeInTheDocument();
     expect(screen.getByText('$1,500 · October 2026')).toBeInTheDocument();
 
-    const rows = screen.getAllByRole('row').slice(1);
+    const rows = within(screen.getByRole('list', { name: 'Rent by month' })).getAllByRole('listitem');
     expect(within(rows[0]).getByText('Overdue')).toBeInTheDocument();
     expect(within(rows[0]).getByText('7 days late')).toBeInTheDocument();
     expect(within(rows[1]).getByText('Boiler was broken')).toBeInTheDocument();

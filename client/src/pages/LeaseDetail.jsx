@@ -106,13 +106,13 @@ function ChargeRow({ charge, role, active, busy, onAction }) {
   const state = chargeStateInfo(charge.state);
   const unpaid = charge.status === 'unpaid';
   return (
-    <tr className='border-t align-top'>
-      <td className='py-3 pr-3'>
+    <li className='flex flex-wrap items-start gap-x-4 gap-y-2 border-t py-3'>
+      <div className='w-32 shrink-0'>
         <p className='font-medium text-slate-900'>{periodLabel(charge.period)}</p>
         <p className='text-xs text-slate-500'>Due {formatLeaseDate(charge.dueDate)}</p>
-      </td>
-      <td className='py-3 pr-3 font-medium text-slate-800'>{formatMoney(charge.amount)}</td>
-      <td className='py-3 pr-3'>
+      </div>
+      <p className='w-20 shrink-0 font-medium text-slate-800'>{formatMoney(charge.amount)}</p>
+      <div className='min-w-0 flex-1'>
         <span className={`badge ring-1 ${state.tone}`}>{state.label}</span>
         {charge.daysOverdue > 0 && <p className='mt-1 text-xs text-red-700'>{charge.daysOverdue} days late</p>}
         {charge.status === 'paid' && (
@@ -122,16 +122,19 @@ function ChargeRow({ charge, role, active, busy, onAction }) {
           </p>
         )}
         {charge.note && <p className='mt-1 text-xs italic text-slate-500'>{charge.note}</p>}
-      </td>
-      <td className='py-3'>
-        {unpaid && role === 'tenant' && (
-          <button type='button' disabled={busy} onClick={() => onAction('pay', charge)} className='btn-primary px-3 py-1 text-xs'>
-            Pay {formatMoney(charge.amount)}
-          </button>
-        )}
-        {unpaid && role === 'owner' && active && <OwnerChargeActions charge={charge} busy={busy} onAction={onAction} />}
-      </td>
-    </tr>
+      </div>
+      {unpaid && (role === 'tenant' || active) && (
+        <div className='w-full sm:w-auto'>
+          {role === 'tenant' ? (
+            <button type='button' disabled={busy} onClick={() => onAction('pay', charge)} className='btn-primary px-3 py-1 text-xs'>
+              Pay {formatMoney(charge.amount)}
+            </button>
+          ) : (
+            <OwnerChargeActions charge={charge} busy={busy} onAction={onAction} />
+          )}
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -276,25 +279,11 @@ export default function LeaseDetail() {
         {charges.length === 0 ? (
           <p className='mt-3 text-sm text-slate-600'>The first rent is charged in the month the lease starts.</p>
         ) : (
-          <div className='mt-3 overflow-x-auto'>
-            <table className='w-full text-left text-sm'>
-              <thead className='text-xs uppercase text-slate-500'>
-                <tr>
-                  <th className='pb-2 pr-3 font-medium'>Month</th>
-                  <th className='pb-2 pr-3 font-medium'>Amount</th>
-                  <th className='pb-2 pr-3 font-medium'>Status</th>
-                  <th className='pb-2 font-medium'>
-                    <span className='sr-only'>Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {charges.map((charge) => (
-                  <ChargeRow key={charge._id} charge={charge} role={viewer.role} active={active} busy={busy} onAction={onAction} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className='mt-3 text-sm' aria-label='Rent by month'>
+            {charges.map((charge) => (
+              <ChargeRow key={charge._id} charge={charge} role={viewer.role} active={active} busy={busy} onAction={onAction} />
+            ))}
+          </ul>
         )}
       </section>
 
