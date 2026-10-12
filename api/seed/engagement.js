@@ -1,6 +1,6 @@
 // Demo data for the features built on top of listings: price history,
-// questions, open houses, a tenancy with a maintenance request and quick
-// replies. Called from api/seed.js after users and listings exist.
+// questions, open houses, a tenancy with a lease, rent history and a
+// maintenance request, and quick replies. Called from api/seed.js after users and listings exist.
 import PriceChange from '../models/priceChange.model.js';
 import ListingQuestion from '../models/listingQuestion.model.js';
 import OpenHouse from '../models/openHouse.model.js';
@@ -8,6 +8,10 @@ import Application from '../models/application.model.js';
 import MaintenanceRequest from '../models/maintenanceRequest.model.js';
 import QuickReply from '../models/quickReply.model.js';
 import ListingDraft from '../models/listingDraft.model.js';
+import Lease from '../models/lease.model.js';
+import RentCharge from '../models/rentCharge.model.js';
+import { removeLeases } from '../utils/leases.js';
+import { syncCharges } from '../controllers/lease.controller.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -22,6 +26,7 @@ export const removeEngagement = async (userIds, listingIds) => {
     MaintenanceRequest.deleteMany({ $or: [{ tenant: { $in: userIds } }, { owner: { $in: userIds } }] }),
     QuickReply.deleteMany({ owner: { $in: userIds } }),
     ListingDraft.deleteMany({ owner: { $in: userIds } }),
+    removeLeases({ $or: [{ tenant: { $in: userIds } }, { owner: { $in: userIds } }] }),
   ]);
 };
 
@@ -79,7 +84,7 @@ export const seedEngagement = async ({ users, listings, now = Date.now() }) => {
   ]);
 
   // David rents Sarah's riverside apartment, so he can report problems.
-  await Application.create({
+  const tenancy = await Application.create({
     listing: listings[4]._id,
     applicant: david._id,
     owner: sarah._id,
@@ -99,6 +104,28 @@ export const seedEngagement = async ({ users, listings, now = Date.now() }) => {
     status: 'in_progress',
     updates: [{ author: sarah._id, body: 'Electrician booked for Thursday morning.', status: 'in_progress' }],
   });
+
+  // The lease started three months ago. The earlier months are paid (one
+  // online, one recorded by Sarah) and this month's rent is still due.
+  const startedAt = new Date(now);
+  const lease = await Lease.create({
+    listing: listings[4]._id,
+    owner: sarah._id,
+    tenant: david._id,
+    application: tenancy._id,
+    monthlyRent: listings[4].offer ? listings[4].discountPrice : listings[4].regularPrice,
+    dueDay: 1,
+    startDate: new Date(Date.UTC(startedAt.getUTCFullYear(), startedAt.getUTCMonth() - 3, 1)),
+    notes: 'Rent is due on the 1st. Water and internet are included.',
+  });
+  await syncCharges(lease, new Date(now));
+  const charges = await RentCharge.find({ lease: lease._id }).sort({ period: 1 });
+  const settle = (charge, fields) => RentCharge.updateOne({ _id: charge._id }, { status: 'paid', settledBy: fields.by, paidAt: charge.dueDate, ...fields.set });
+  await Promise.all([
+    settle(charges[0], { by: david._id, set: { method: 'online', reference: 'RENT-DEMO000001' } }),
+    settle(charges[1], { by: sarah._id, set: { method: 'bank_transfer', note: 'Received by bank transfer' } }),
+    settle(charges[2], { by: david._id, set: { method: 'online', reference: 'RENT-DEMO000003' } }),
+  ]);
 
   await QuickReply.insertMany([
     { owner: sarah._id, title: 'Viewing times', body: 'I can show the home on weekday evenings after 6pm or Saturday mornings.' },

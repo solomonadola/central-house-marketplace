@@ -274,7 +274,7 @@ const seed = async () => {
       `${conversations.length} conversations and ${reviews.length} reviews`
   );
   await seedEngagement({ users: createdUsers, listings: createdListings, now });
-  console.log('Added price history, questions, open houses, a maintenance request and quick replies');
+  console.log('Added price history, questions, open houses, a lease with rent history, a maintenance request and quick replies');
   console.log(`Demo login: ${createdUsers[0].email} / ${SEED_PASSWORD}`);
   console.log(`Admin login: admin${SEED_DOMAIN} / ${SEED_PASSWORD}`);
 };
