@@ -5,6 +5,7 @@ import { useFetchJson } from '../hooks/useFetchJson';
 import { formatMoney } from '../utils/paymentStatus';
 import { formatLeaseDate, ordinal } from '../utils/rent';
 import LeaseSetupForm from '../components/LeaseSetupForm';
+import RentIncome from '../components/RentIncome';
 
 function BalanceBadge({ lease }) {
   if (lease.status === 'ended') return <span className='badge bg-slate-100 text-slate-700 ring-1 ring-slate-200'>Ended</span>;
@@ -127,6 +128,7 @@ export default function Rent() {
         ))}
       </nav>
 
+      {asOwner && <RentIncome />}
       {asOwner && <Candidates />}
       <LeaseList asOwner={asOwner} />
     </main>

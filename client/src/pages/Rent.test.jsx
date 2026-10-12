@@ -76,6 +76,9 @@ describe('Rent page', () => {
     fetchMock = vi.fn(async (url, options) => {
       if (options?.method === 'POST') return jsonResponse(created, created.success === false ? 400 : 201);
       if (url === '/api/leases/candidates') return jsonResponse([candidate]);
+      if (url.startsWith('/api/leases/income')) {
+        return jsonResponse({ months: [], totals: { activeLeases: 0, expected: 0, collected: 0, outstanding: 0, overdue: 0, overdueCount: 0 } });
+      }
       return jsonResponse(leases);
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -111,6 +114,7 @@ describe('Rent page', () => {
     expect(screen.getByText(/Tenant: tenant_tia/)).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Homes I let' })).toHaveAttribute('aria-selected', 'true');
     expect(fetchMock).toHaveBeenCalledWith('/api/leases?as=owner', undefined);
+    expect(fetchMock).toHaveBeenCalledWith('/api/leases/income?months=6', undefined);
   });
 
   it('sets up a lease prefilled from the application and opens it', async () => {
