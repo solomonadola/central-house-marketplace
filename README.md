@@ -54,7 +54,8 @@ Central House Marketplace is a platform where you can find houses for rent and s
   a lease (rent, due day, start and end). Every month gets a rent charge the
   tenant can pay online (simulated) or the owner can record as paid by cash,
   transfer or check, or waive. Both sides see the balance, overdue months and a
-  downloadable ledger, and owners get a rental income chart. Tenants are
+  downloadable ledger, and owners get a rental income chart. Owners can
+  schedule a rent change from a future month or extend the lease. Tenants are
   reminded 3 days before rent is due and when it is 1 and 7 days late; run
   `npm run rent-reminders` from a scheduler, or set `RENT_REMINDERS=daily`.
 - **Move-in and move-out inspections** – owners write a room-by-room condition
@@ -376,6 +377,7 @@ Beyond the core routes above, the app exposes:
 | GET | `/api/leases/:id` 🔒 | A lease with its monthly charges and balance |
 | GET | `/api/leases/:id/export` 🔒 | The rent ledger, as CSV |
 | POST | `/api/leases/:id/end` 🔒 | Owner ends a lease |
+| POST | `/api/leases/:id/terms` 🔒 | Owner schedules a rent change (`monthlyRent`, `effectiveFrom`) or sets `endDate` |
 | POST | `/api/leases/:id/charges/:chargeId/pay` 🔒 | Tenant pays a month online |
 | POST | `/api/leases/:id/charges/:chargeId/record\|waive` 🔒 | Owner records an offline payment or waives a month |
 | GET | `/api/inspections?leaseId=` 🔒 | Inspection reports on a lease |
