@@ -60,6 +60,7 @@ export const NOTIFICATION_ICONS = {
   inspection_submitted: { Icon: FaClipboardCheck, tone: 'text-amber-600 bg-amber-50' },
   inspection_signed: { Icon: FaClipboardCheck, tone: 'text-green-600 bg-green-50' },
   inspection_disputed: { Icon: FaClipboardCheck, tone: 'text-red-600 bg-red-50' },
+  content_removed: { Icon: FaEyeSlash, tone: 'text-red-600 bg-red-50' },
 };
 
 const FALLBACK = { Icon: FaBell, tone: 'text-slate-600 bg-slate-100' };
