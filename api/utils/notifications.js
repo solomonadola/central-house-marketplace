@@ -307,3 +307,26 @@ export const notifyRentWaived = ({ recipient, amount, currency, periodLabel, lea
     link: `/leases/${leaseId}`,
     meta: { leaseId },
   });
+
+const INSPECTION_NAMES = { move_in: 'move-in', move_out: 'move-out' };
+
+export const notifyInspectionSubmitted = ({ recipient, ownerName, kind, listingName, inspectionId }) =>
+  notify({
+    recipient,
+    type: 'inspection_submitted',
+    title: `${ownerName} sent you the ${INSPECTION_NAMES[kind]} report`,
+    body: `Check it for "${listingName}" and sign it or tell them what's wrong.`,
+    link: `/inspections/${inspectionId}`,
+    meta: { inspectionId },
+    email: true,
+  });
+
+export const notifyInspectionAnswered = ({ recipient, tenantName, kind, signed, inspectionId }) =>
+  notify({
+    recipient,
+    type: signed ? 'inspection_signed' : 'inspection_disputed',
+    title: `${tenantName} ${signed ? 'signed' : 'disputed'} the ${INSPECTION_NAMES[kind]} report`,
+    link: `/inspections/${inspectionId}`,
+    meta: { inspectionId },
+    email: !signed,
+  });

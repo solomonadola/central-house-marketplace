@@ -31,6 +31,9 @@ export const NOTIFICATION_TYPES = [
   'lease_ended',
   'rent_paid',
   'rent_waived',
+  'inspection_submitted',
+  'inspection_signed',
+  'inspection_disputed',
 ];
 
 const notificationSchema = new mongoose.Schema(

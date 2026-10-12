@@ -485,3 +485,39 @@ export const waiveRentSchema = z.object({
 });
 
 export const endLeaseSchema = z.object({ endDate: optionalDate });
+
+export const createInspectionSchema = z.object({
+  leaseId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid lease id'),
+  kind: z.enum(['move_in', 'move_out'], { errorMap: () => ({ message: "Kind must be 'move_in' or 'move_out'" }) }),
+});
+
+const inspectionItem = z.object({
+  name: z.string().trim().min(1, 'Every item needs a name').max(60, 'Item names must be at most 60 characters'),
+  condition: z.enum(['good', 'fair', 'poor', 'damaged', 'na'], {
+    errorMap: () => ({ message: 'Choose a condition for every item' }),
+  }),
+  note: z.string().trim().max(300, 'Notes must be at most 300 characters').optional().default(''),
+});
+
+export const updateInspectionSchema = z
+  .object({
+    rooms: z
+      .array(
+        z.object({
+          name: z.string().trim().min(1, 'Every room needs a name').max(60, 'Room names must be at most 60 characters'),
+          items: z.array(inspectionItem).max(40, 'A room can have at most 40 items'),
+        })
+      )
+      .max(30, 'A report can have at most 30 rooms'),
+    summary: z.string().trim().max(2000, 'Summary must be at most 2000 characters'),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to update' });
+
+export const disputeInspectionSchema = z.object({
+  reason: z
+    .string({ required_error: 'Tell the owner what is wrong with the report' })
+    .trim()
+    .min(10, 'Tell the owner what is wrong with the report (at least 10 characters)')
+    .max(1000, 'Reason must be at most 1000 characters'),
+});
