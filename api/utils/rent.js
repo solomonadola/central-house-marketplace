@@ -106,3 +106,12 @@ export const incomeByPeriod = (charges, periods) => {
   });
   return [...rows.values()];
 };
+
+// The rent charged for a period: the latest scheduled change that has taken
+// effect by then, or the starting rent.
+export const rentForPeriod = (lease, period) => {
+  const applied = (lease.rentChanges ?? [])
+    .filter((change) => change.effectiveFrom <= period)
+    .sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom));
+  return applied.length > 0 ? applied.at(-1).amount : lease.monthlyRent;
+};

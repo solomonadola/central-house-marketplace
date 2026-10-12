@@ -20,6 +20,21 @@ const leaseSchema = new mongoose.Schema(
     status: { type: String, enum: LEASE_STATUSES, default: 'active' },
     endedAt: { type: Date, default: null },
     notes: { type: String, trim: true, maxlength: 1000, default: '' },
+    // Scheduled rent changes. monthlyRent is the rent the lease started
+    // with; from each change's month onwards its amount applies instead.
+    rentChanges: {
+      type: [
+        new mongoose.Schema(
+          {
+            amount: { type: Number, required: true, min: 1, max: 1_000_000 },
+            // 'YYYY-MM'
+            effectiveFrom: { type: String, required: true, match: /^\d{4}-\d{2}$/ },
+          },
+          { _id: false, timestamps: { createdAt: true, updatedAt: false } }
+        ),
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

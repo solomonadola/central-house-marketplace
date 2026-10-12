@@ -9,6 +9,7 @@ import {
   periodLabel,
   periodsBetween,
   recentPeriods,
+  rentForPeriod,
   summarizeCharges,
 } from '../utils/rent.js';
 
@@ -125,5 +126,29 @@ describe('income', () => {
       { period: '2026-09', expected: 1800, collected: 1000 },
       { period: '2026-10', expected: 800, collected: 800 },
     ]);
+  });
+});
+
+describe('rentForPeriod', () => {
+  const lease = {
+    monthlyRent: 1000,
+    rentChanges: [
+      { amount: 1200, effectiveFrom: '2027-03' },
+      { amount: 1100, effectiveFrom: '2026-12' },
+    ],
+  };
+
+  it('uses the starting rent before any change', () => {
+    expect(rentForPeriod(lease, '2026-11')).toBe(1000);
+  });
+
+  it('uses the latest change that has taken effect', () => {
+    expect(rentForPeriod(lease, '2026-12')).toBe(1100);
+    expect(rentForPeriod(lease, '2027-02')).toBe(1100);
+    expect(rentForPeriod(lease, '2027-03')).toBe(1200);
+  });
+
+  it('works for leases without changes', () => {
+    expect(rentForPeriod({ monthlyRent: 900 }, '2026-01')).toBe(900);
   });
 });
