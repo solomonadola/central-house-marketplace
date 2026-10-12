@@ -16,6 +16,7 @@ import QuickReply from '../models/quickReply.model.js';
 import ListingDraft from '../models/listingDraft.model.js';
 import Lease from '../models/lease.model.js';
 import RentCharge from '../models/rentCharge.model.js';
+import Inspection from '../models/inspection.model.js';
 import { errorHandler } from '../utils/error.js';
 
 export const EXPORT_VERSION = 1;
@@ -71,6 +72,7 @@ export const exportMyData = async (req, res, next) => {
       ListingDraft.find({ owner: userId }, 'data updatedAt').lean(),
       Lease.find({ $or: [{ tenant: userId }, { owner: userId }] }).populate('listing', 'name').lean(),
     ]);
+    const inspections = await Inspection.find({ lease: { $in: leases.map((l) => l._id) } }).lean();
     const rentCharges = await RentCharge.find({ lease: { $in: leases.map((l) => l._id) } }, '-settledBy')
       .sort({ period: 1 })
       .lean();
@@ -125,6 +127,10 @@ export const exportMyData = async (req, res, next) => {
       leases: leases.map((lease) => ({
         ...lease,
         rentCharges: rentCharges.filter((c) => c.lease.toString() === lease._id.toString()),
+        // Drafts are the owner's own work in progress.
+        inspections: inspections.filter(
+          (i) => i.lease.toString() === lease._id.toString() && (i.status !== 'draft' || i.owner.toString() === userId)
+        ),
       })),
       notifications,
     };
