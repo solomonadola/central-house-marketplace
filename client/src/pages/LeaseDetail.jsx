@@ -104,7 +104,7 @@ function OwnerChargeActions({ charge, busy, onAction }) {
   );
 }
 
-function ChargeRow({ charge, role, active, busy, onAction }) {
+function ChargeRow({ leaseId, charge, role, active, busy, onAction }) {
   const state = chargeStateInfo(charge.state);
   const unpaid = charge.status === 'unpaid';
   return (
@@ -120,7 +120,10 @@ function ChargeRow({ charge, role, active, busy, onAction }) {
         {charge.status === 'paid' && (
           <p className='mt-1 text-xs text-slate-500'>
             {METHOD_LABELS[charge.method] ?? 'Paid'} · {formatLeaseDate(charge.paidAt)}
-            {charge.reference && ` · ${charge.reference}`}
+            {charge.reference && ` · ${charge.reference}`} ·{' '}
+            <Link to={`/leases/${leaseId}/receipts/${charge._id}`} className='text-brand-700 hover:underline'>
+              Receipt
+            </Link>
           </p>
         )}
         {charge.note && <p className='mt-1 text-xs italic text-slate-500'>{charge.note}</p>}
@@ -302,7 +305,7 @@ export default function LeaseDetail() {
         ) : (
           <ul className='mt-3 text-sm' aria-label='Rent by month'>
             {charges.map((charge) => (
-              <ChargeRow key={charge._id} charge={charge} role={viewer.role} active={active} busy={busy} onAction={onAction} />
+              <ChargeRow key={charge._id} leaseId={lease._id} charge={charge} role={viewer.role} active={active} busy={busy} onAction={onAction} />
             ))}
           </ul>
         )}

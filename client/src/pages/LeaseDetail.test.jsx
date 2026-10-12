@@ -92,6 +92,8 @@ describe('Lease page', () => {
     expect(within(rows[0]).getByText('7 days late')).toBeInTheDocument();
     expect(within(rows[1]).getByText('Boiler was broken')).toBeInTheDocument();
     expect(within(rows[2]).getByText(/Paid online · Aug 3, 2026 · RENT-ABC123/)).toBeInTheDocument();
+    expect(within(rows[2]).getByRole('link', { name: 'Receipt' })).toHaveAttribute('href', '/leases/lease1/receipts/c08');
+    expect(within(rows[0]).queryByRole('link', { name: 'Receipt' })).not.toBeInTheDocument();
   });
 
   it('lets the tenant pay an unpaid month', async () => {
