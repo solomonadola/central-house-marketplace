@@ -42,7 +42,7 @@ function LeaseList({ asOwner }) {
               <div className='min-w-0 flex-1'>
                 <p className='truncate font-semibold text-slate-900'>{lease.listing?.name ?? 'Listing removed'}</p>
                 <p className='mt-1 text-sm text-slate-500'>
-                  {formatMoney(lease.monthlyRent, lease.currency)} / month, due on the {ordinal(lease.dueDay)} ·{' '}
+                  {formatMoney(lease.currentRent ?? lease.monthlyRent, lease.currency)} / month, due on the {ordinal(lease.dueDay)} ·{' '}
                   {asOwner ? 'Tenant' : 'Owner'}: {other?.username ?? 'Deleted user'} · since {formatLeaseDate(lease.startDate)}
                 </p>
               </div>

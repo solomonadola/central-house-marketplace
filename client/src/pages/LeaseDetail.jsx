@@ -5,6 +5,7 @@ import { useFetchJson } from '../hooks/useFetchJson';
 import { apiFetch } from '../utils/apiFetch';
 import { downloadCsv } from '../utils/downloadCsv';
 import LeaseInspections from '../components/LeaseInspections';
+import LeaseTermsForm from '../components/LeaseTermsForm';
 import { formatMoney } from '../utils/paymentStatus';
 import {
   METHOD_LABELS,
@@ -179,6 +180,7 @@ export default function LeaseDetail() {
   const [latest, setLatest] = useState(null);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(null);
+  const [editingTerms, setEditingTerms] = useState(false);
 
   if (loading && !data) return <p className='container-page py-8 text-slate-600'>Loading...</p>;
   if (error) {
@@ -192,18 +194,27 @@ export default function LeaseDetail() {
     );
   }
 
-  const { lease, charges, summary, viewer } = latest ?? data;
+  const view = latest ?? data;
+  const { lease, charges, summary, viewer } = view;
+  const currentRent = view.currentRent ?? lease.monthlyRent;
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const scheduled = (lease.rentChanges ?? [])
+    .filter((c) => c.effectiveFrom > thisMonth)
+    .sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom));
   const isOwner = viewer.role === 'owner';
   const active = lease.status === 'active';
   const other = isOwner ? lease.tenant : lease.owner;
 
+  // Runs an action and shows its result; resolves true when it worked.
   const run = async (request) => {
     setBusy(true);
     setActionError(null);
     try {
       setLatest(await request());
+      return true;
     } catch (err) {
       setActionError(err.message || 'Something went wrong. Please try again.');
+      return false;
     } finally {
       setBusy(false);
     }
@@ -236,7 +247,7 @@ export default function LeaseDetail() {
         <dl className='mt-4 grid gap-3 text-sm sm:grid-cols-4'>
           <div>
             <dt className='text-slate-500'>Rent</dt>
-            <dd className='font-medium text-slate-800'>{formatMoney(lease.monthlyRent, lease.currency)} / month</dd>
+            <dd className='font-medium text-slate-800'>{formatMoney(currentRent, lease.currency)} / month</dd>
           </div>
           <div>
             <dt className='text-slate-500'>Due</dt>
@@ -253,6 +264,15 @@ export default function LeaseDetail() {
             <dd className='font-medium text-slate-800'>{other?.username ?? 'Deleted user'}</dd>
           </div>
         </dl>
+        {scheduled.length > 0 && (
+          <ul className='mt-3 text-sm text-brand-800'>
+            {scheduled.map((c) => (
+              <li key={c.effectiveFrom}>
+                Rent becomes {formatMoney(c.amount, lease.currency)} / month from {periodLabel(c.effectiveFrom)}
+              </li>
+            ))}
+          </ul>
+        )}
         {lease.notes && <p className='mt-4 whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm text-slate-700'>{lease.notes}</p>}
       </header>
 
@@ -289,6 +309,23 @@ export default function LeaseDetail() {
       </section>
 
       <LeaseInspections leaseId={lease._id} isOwner={isOwner} />
+
+      {isOwner && active && editingTerms && (
+        <LeaseTermsForm
+          lease={lease}
+          currentRent={currentRent}
+          busy={busy}
+          onCancel={() => setEditingTerms(false)}
+          onSave={async (body) => {
+            if (await run(() => postJson(`/api/leases/${lease._id}/terms`, body))) setEditingTerms(false);
+          }}
+        />
+      )}
+      {isOwner && active && !editingTerms && (
+        <button type='button' onClick={() => setEditingTerms(true)} className='btn-secondary self-start text-sm'>
+          Change rent or end date
+        </button>
+      )}
 
       {isOwner && active && <EndLease lease={lease} busy={busy} onEnd={(endDate) => run(() => postJson(`/api/leases/${lease._id}/end`, { endDate }))} />}
     </main>

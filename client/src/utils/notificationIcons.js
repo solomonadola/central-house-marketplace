@@ -55,6 +55,7 @@ export const NOTIFICATION_ICONS = {
   maintenance_update: { Icon: FaWrench, tone: 'text-sky-600 bg-sky-50' },
   lease_created: { Icon: FaFileContract, tone: 'text-brand-600 bg-brand-50' },
   lease_ended: { Icon: FaFileContract, tone: 'text-slate-600 bg-slate-100' },
+  lease_terms_changed: { Icon: FaFileContract, tone: 'text-amber-600 bg-amber-50' },
   rent_paid: { Icon: FaHandHoldingUsd, tone: 'text-green-600 bg-green-50' },
   rent_waived: { Icon: FaHandHoldingUsd, tone: 'text-sky-600 bg-sky-50' },
   rent_reminder: { Icon: FaHandHoldingUsd, tone: 'text-amber-600 bg-amber-50' },

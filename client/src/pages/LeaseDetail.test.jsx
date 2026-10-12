@@ -186,4 +186,70 @@ describe('Lease page', () => {
 
     expect(await screen.findByRole('heading', { name: 'Lease not found' })).toBeInTheDocument();
   });
+
+  describe('changing terms', () => {
+    const nextMonths = () => {
+      const now = new Date();
+      return [1, 2].map((n) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + n, 1)).toISOString().slice(0, 7));
+    };
+
+    it('lets the owner schedule a rent change and shows it', async () => {
+      const [, inTwoMonths] = nextMonths();
+      current = view('owner', { currentRent: 1500 });
+      afterAction = view('owner', {
+        currentRent: 1500,
+        lease: { ...lease, rentChanges: [{ amount: 1650, effectiveFrom: inTwoMonths }] },
+      });
+      renderPage();
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Change rent or end date' }));
+      const form = screen.getByRole('form', { name: 'Change lease terms' });
+      const rent = within(form).getByLabelText('New monthly rent ($)');
+      expect(rent).toHaveValue(1500);
+      expect(within(form).getByLabelText('Starting from')).toHaveValue(inTwoMonths);
+      await userEvent.clear(rent);
+      await userEvent.type(rent, '1650');
+      await userEvent.click(within(form).getByRole('button', { name: 'Save changes' }));
+
+      const [url, options] = fetchMock.mock.calls.find(([, o]) => o?.method === 'POST');
+      expect(url).toBe('/api/leases/lease1/terms');
+      expect(JSON.parse(options.body)).toEqual({ monthlyRent: 1650, effectiveFrom: inTwoMonths });
+      expect(await screen.findByText(/Rent becomes \$1,650 \/ month from/)).toBeInTheDocument();
+      expect(screen.queryByRole('form', { name: 'Change lease terms' })).not.toBeInTheDocument();
+    });
+
+    it('can extend the end date without changing the rent', async () => {
+      current = view('owner');
+      renderPage();
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Change rent or end date' }));
+      await userEvent.click(screen.getByLabelText('Change the rent'));
+      const save = screen.getByRole('button', { name: 'Save changes' });
+      expect(save).toBeDisabled();
+      await userEvent.type(screen.getByLabelText('End date (optional)'), '2027-12-31');
+      await userEvent.click(save);
+
+      const [, options] = fetchMock.mock.calls.find(([, o]) => o?.method === 'POST');
+      expect(JSON.parse(options.body)).toEqual({ endDate: '2027-12-31' });
+    });
+
+    it('keeps the form open when saving fails', async () => {
+      current = view('owner');
+      afterAction = { success: false, message: 'A rent change can start next month at the earliest.' };
+      renderPage();
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Change rent or end date' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('A rent change can start next month at the earliest.');
+      expect(screen.getByRole('form', { name: 'Change lease terms' })).toBeInTheDocument();
+    });
+
+    it('is not offered to tenants', async () => {
+      renderPage();
+
+      await screen.findByRole('button', { name: 'Pay $1,500' });
+      expect(screen.queryByRole('button', { name: 'Change rent or end date' })).not.toBeInTheDocument();
+    });
+  });
 });
