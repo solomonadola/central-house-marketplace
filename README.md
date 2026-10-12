@@ -43,8 +43,8 @@ Central House Marketplace is a platform where you can find houses for rent and s
   log of every moderation action and a per-user detail page.
 - **Price history and price-drop alerts** – every listing shows its past
   prices, and people who saved it are notified when the price falls.
-- **Price comparison** – how a listing's price per bedroom compares with
-  similar homes of the same type nearby.
+- **Price comparison** – how a listing's price compares with the median of
+  similar homes: same rent/sale type and bedroom count, within 5 km.
 - **Questions and answers** – ask an owner a public question about a listing;
   answered questions are shown to everyone.
 - **Open houses** – owners schedule public viewing times with an optional
@@ -137,7 +137,7 @@ npm run seed
 ```
 
 This creates 4 demo users (with confirmed emails) and an admin, 20 listings in San Francisco neighbourhoods with 30 days of view history, and sample conversations, reviews and viewing requests. It also adds price
-history, questions, open houses, quick replies, a draft listing, a lease with
+history, questions, open houses, quick replies, a lease with
 three paid months and one due, a maintenance request and a flagged question for
 the moderation queue. Sign in with `sarah_homes@demo.centralhouse.local` / `password123`. Re-running the command only replaces the demo data and never touches other accounts.
 
