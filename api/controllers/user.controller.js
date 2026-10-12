@@ -19,6 +19,7 @@ import MaintenanceRequest from '../models/maintenanceRequest.model.js';
 import QuickReply from '../models/quickReply.model.js';
 import ListingDraft from '../models/listingDraft.model.js';
 import { removeLeases } from '../utils/leases.js';
+import ContentFlag from '../models/contentFlag.model.js';
 import { updateListingRating } from '../utils/ratings.js';
 import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
 import { getResponseStats } from '../utils/responseStats.js';
@@ -101,6 +102,7 @@ export const deleteUser = async (req, res, next) => {
       // Reviews on their listings, and reviews they wrote elsewhere.
       Review.deleteMany({ $or: [onTheirListings, { author: userId }] }),
       Report.deleteMany({ reporter: userId }),
+      ContentFlag.deleteMany({ $or: [onTheirListings, { reporter: userId }] }),
       Viewing.deleteMany({ $or: [{ requester: userId }, { owner: userId }] }),
       AvailabilitySlot.deleteMany({ owner: userId }),
       Application.deleteMany({ $or: [{ applicant: userId }, { owner: userId }] }),

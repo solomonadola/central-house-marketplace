@@ -17,6 +17,7 @@ import ListingQuestion from '../models/listingQuestion.model.js';
 import OpenHouse from '../models/openHouse.model.js';
 import MaintenanceRequest from '../models/maintenanceRequest.model.js';
 import { removeLeases } from '../utils/leases.js';
+import ContentFlag from '../models/contentFlag.model.js';
 import { comparePrice } from '../utils/priceComparison.js';
 import { dropFromPeak, recordInitialPrice, recordPriceChange } from '../utils/priceHistory.js';
 
@@ -101,6 +102,7 @@ export const deleteListing = async (req, res, next) => {
         ListingQuestion,
         OpenHouse,
         MaintenanceRequest,
+        ContentFlag,
       ].map((Model) => Model.deleteMany(byListing)),
     ]);
     res.status(200).json('Listing has been deleted!');

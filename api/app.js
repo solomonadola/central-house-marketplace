@@ -24,6 +24,7 @@ import quickReplyRouter from './routes/quickReply.route.js';
 import listingDraftRouter from './routes/listingDraft.route.js';
 import leaseRouter from './routes/lease.route.js';
 import inspectionRouter from './routes/inspection.route.js';
+import contentFlagRouter from './routes/contentFlag.route.js';
 
 const __dirname = path.resolve();
 
@@ -70,6 +71,7 @@ app.use('/api/quick-replies', quickReplyRouter);
 app.use('/api/listing-drafts', listingDraftRouter);
 app.use('/api/leases', leaseRouter);
 app.use('/api/inspections', inspectionRouter);
+app.use('/api/content-flags', contentFlagRouter);
 
 // Liveness probe for Docker/monitoring.
 app.get('/api/health', (req, res) => {
