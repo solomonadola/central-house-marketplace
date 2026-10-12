@@ -54,7 +54,9 @@ Central House Marketplace is a platform where you can find houses for rent and s
   a lease (rent, due day, start and end). Every month gets a rent charge the
   tenant can pay online (simulated) or the owner can record as paid by cash,
   transfer or check, or waive. Both sides see the balance, overdue months and a
-  downloadable ledger, and owners get a rental income chart.
+  downloadable ledger, and owners get a rental income chart. Tenants are
+  reminded 3 days before rent is due and when it is 1 and 7 days late; run
+  `npm run rent-reminders` from a scheduler, or set `RENT_REMINDERS=daily`.
 - **Move-in and move-out inspections** – owners write a room-by-room condition
   report, the tenant signs or disputes it, and the move-out report shows what
   got worse since move-in.
@@ -199,6 +201,7 @@ CI runs all of the above, plus the client production build and a Docker image bu
 | `npm run build`               | Install all dependencies and build the client |
 | `npm run seed`                | Reset the demo users and listings             |
 | `npm run make-admin -- <email>` | Grant admin rights (`--remove` to revoke)   |
+| `npm run rent-reminders`      | Send due-soon and overdue rent reminders once |
 | `npm test`                    | Run the API tests                             |
 | `npm test --prefix client`    | Run the client tests                          |
 | `npm run dev --prefix client` | Start the Vite dev server                     |
