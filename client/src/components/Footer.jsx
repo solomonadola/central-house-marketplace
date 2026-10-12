@@ -28,7 +28,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className='mt-16 border-t border-slate-200 bg-white'>
+    <footer className='mt-16 border-t border-slate-200 bg-white print:hidden'>
       <div className='container-page grid grid-cols-2 gap-8 py-10 lg:grid-cols-5'>
         <div className='col-span-2'>
           <Logo />
