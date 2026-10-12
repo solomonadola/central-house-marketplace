@@ -27,6 +27,10 @@ export const NOTIFICATION_TYPES = [
   'open_house_cancelled',
   'maintenance_request',
   'maintenance_update',
+  'lease_created',
+  'lease_ended',
+  'rent_paid',
+  'rent_waived',
 ];
 
 const notificationSchema = new mongoose.Schema(

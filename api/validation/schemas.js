@@ -438,3 +438,50 @@ export const listingDraftSchema = z.object({
     })
     .partial(),
 });
+
+const MAX_LEASE_YEARS = 10;
+
+export const createLeaseSchema = z
+  .object({
+    applicationId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid application id'),
+    monthlyRent: z.coerce
+      .number({ invalid_type_error: 'Rent must be a number' })
+      .min(1, 'Rent must be at least 1')
+      .max(1_000_000, 'Rent is too large'),
+    currency: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]{3}$/, 'Currency must be a 3-letter code')
+      .optional()
+      .default('USD'),
+    dueDay: z.coerce
+      .number({ invalid_type_error: 'Due day must be a number' })
+      .int('Due day must be a whole number')
+      .min(1, 'Rent must be due between the 1st and the 28th')
+      .max(28, 'Rent must be due between the 1st and the 28th'),
+    startDate: z.coerce.date({ errorMap: () => ({ message: 'Please choose a start date' }) }),
+    endDate: optionalDate,
+    notes: z.string().trim().max(1000, 'Notes must be at most 1000 characters').optional().default(''),
+  })
+  .refine((v) => !v.endDate || v.endDate > v.startDate, {
+    message: 'The end date must be after the start date',
+    path: ['endDate'],
+  })
+  .refine((v) => !v.endDate || v.endDate - v.startDate <= MAX_LEASE_YEARS * 366 * 24 * 60 * 60 * 1000, {
+    message: `A lease can last at most ${MAX_LEASE_YEARS} years`,
+    path: ['endDate'],
+  });
+
+export const recordRentPaymentSchema = z.object({
+  method: z.enum(['bank_transfer', 'cash', 'check', 'other'], {
+    errorMap: () => ({ message: 'Choose how the rent was paid' }),
+  }),
+  note: z.string().trim().max(300, 'Note must be at most 300 characters').optional().default(''),
+});
+
+export const waiveRentSchema = z.object({
+  note: z.string().trim().max(300, 'Note must be at most 300 characters').optional().default(''),
+});
+
+export const endLeaseSchema = z.object({ endDate: optionalDate });

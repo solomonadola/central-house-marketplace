@@ -265,3 +265,45 @@ export const notifyMaintenanceUpdated = ({ recipient, authorName, title, status,
     link: `/maintenance/${requestId}`,
     meta: { requestId, status: status ?? null },
   });
+
+export const notifyLeaseCreated = ({ recipient, ownerName, listingName, monthlyRent, currency, leaseId }) =>
+  notify({
+    recipient,
+    type: 'lease_created',
+    title: `${ownerName} set up your lease`,
+    body: `"${listingName}" at ${money(monthlyRent, currency)} / month`,
+    link: `/leases/${leaseId}`,
+    meta: { leaseId },
+    email: true,
+  });
+
+export const notifyLeaseEnded = ({ recipient, listingName, endDate, leaseId }) =>
+  notify({
+    recipient,
+    type: 'lease_ended',
+    title: `Your lease for "${listingName}" has ended`,
+    body: `Last day: ${new Date(endDate).toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: 'UTC' })}`,
+    link: `/leases/${leaseId}`,
+    meta: { leaseId },
+    email: true,
+  });
+
+export const notifyRentPaid = ({ recipient, tenantName, amount, currency, periodLabel, leaseId }) =>
+  notify({
+    recipient,
+    type: 'rent_paid',
+    title: `${tenantName} paid rent for ${periodLabel}`,
+    body: money(amount, currency),
+    link: `/leases/${leaseId}`,
+    meta: { leaseId },
+  });
+
+export const notifyRentWaived = ({ recipient, amount, currency, periodLabel, leaseId }) =>
+  notify({
+    recipient,
+    type: 'rent_waived',
+    title: `Rent for ${periodLabel} was waived`,
+    body: `${money(amount, currency)} no longer owed`,
+    link: `/leases/${leaseId}`,
+    meta: { leaseId },
+  });
