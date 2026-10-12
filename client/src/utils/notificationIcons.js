@@ -17,6 +17,8 @@ import {
   FaCommentDots,
   FaHeartBroken,
   FaFileAlt,
+  FaFileContract,
+  FaHandHoldingUsd,
   FaMoneyCheckAlt,
   FaStar,
   FaUserCheck,
@@ -50,6 +52,10 @@ export const NOTIFICATION_ICONS = {
   open_house_cancelled: { Icon: FaDoorClosed, tone: 'text-red-600 bg-red-50' },
   maintenance_request: { Icon: FaTools, tone: 'text-amber-600 bg-amber-50' },
   maintenance_update: { Icon: FaWrench, tone: 'text-sky-600 bg-sky-50' },
+  lease_created: { Icon: FaFileContract, tone: 'text-brand-600 bg-brand-50' },
+  lease_ended: { Icon: FaFileContract, tone: 'text-slate-600 bg-slate-100' },
+  rent_paid: { Icon: FaHandHoldingUsd, tone: 'text-green-600 bg-green-50' },
+  rent_waived: { Icon: FaHandHoldingUsd, tone: 'text-sky-600 bg-sky-50' },
 };
 
 const FALLBACK = { Icon: FaBell, tone: 'text-slate-600 bg-slate-100' };
