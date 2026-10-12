@@ -4,6 +4,7 @@ import { FaArrowLeft, FaDownload } from 'react-icons/fa';
 import { useFetchJson } from '../hooks/useFetchJson';
 import { apiFetch } from '../utils/apiFetch';
 import { downloadCsv } from '../utils/downloadCsv';
+import LeaseInspections from '../components/LeaseInspections';
 import { formatMoney } from '../utils/paymentStatus';
 import {
   METHOD_LABELS,
@@ -286,6 +287,8 @@ export default function LeaseDetail() {
           </ul>
         )}
       </section>
+
+      <LeaseInspections leaseId={lease._id} isOwner={isOwner} />
 
       {isOwner && active && <EndLease lease={lease} busy={busy} onEnd={(endDate) => run(() => postJson(`/api/leases/${lease._id}/end`, { endDate }))} />}
     </main>
