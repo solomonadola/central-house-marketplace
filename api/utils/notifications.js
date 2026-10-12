@@ -341,3 +341,24 @@ export const notifyContentRemoved = ({ recipient, targetType, listingName, listi
     meta: { listingId, targetType },
     email: true,
   });
+
+export const notifyLeaseTermsChanged = ({ recipient, listingName, currency, rent, endDate, leaseId }) => {
+  const parts = [];
+  if (rent) {
+    const [year, month] = rent.effectiveFrom.split('-').map(Number);
+    const from = new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    parts.push(`Rent becomes ${money(rent.amount, currency)} / month from ${from}.`);
+  }
+  if (endDate) {
+    parts.push(`The lease now ends on ${new Date(endDate).toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: 'UTC' })}.`);
+  }
+  return notify({
+    recipient,
+    type: 'lease_terms_changed',
+    title: `The terms of your lease for "${listingName}" changed`,
+    body: parts.join(' '),
+    link: `/leases/${leaseId}`,
+    meta: { leaseId },
+    email: true,
+  });
+};

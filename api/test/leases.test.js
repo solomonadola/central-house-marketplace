@@ -330,6 +330,86 @@ describe('ending a lease', () => {
   });
 });
 
+describe('changing lease terms', () => {
+  const periodFromNow = (months) => {
+    const now = new Date();
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + months, 1)).toISOString().slice(0, 7);
+  };
+
+  it('schedules a rent change that applies from that month and tells the tenant', async () => {
+    const { tenant, ownerAgent, leaseId } = await leased();
+    const from = periodFromNow(2);
+
+    const res = await ownerAgent.post(`/api/leases/${leaseId}/terms`).send({ monthlyRent: 1650, effectiveFrom: from });
+
+    expect(res.status).toBe(200);
+    expect(res.body.lease.rentChanges).toEqual([expect.objectContaining({ amount: 1650, effectiveFrom: from })]);
+    expect(res.body.currentRent).toBe(1500);
+    expect(res.body.charges.every((c) => c.amount === 1500)).toBe(true);
+    const notification = await Notification.findOne({ recipient: tenant._id, type: 'lease_terms_changed' });
+    expect(notification.title).toBe('The terms of your lease for "Canal View Flat" changed');
+    expect(notification.body).toMatch(/^Rent becomes \$1,650 \/ month from \w+ \d{4}\.$/);
+
+    const lease = await Lease.findById(leaseId);
+    const [year, month] = from.split('-').map(Number);
+    await syncCharges(lease, new Date(Date.UTC(year, month - 1, 15)));
+    const charges = await RentCharge.find({ lease: leaseId }).sort({ period: 1 });
+    expect(charges.map((c) => c.amount).slice(-3)).toEqual([1500, 1500, 1650]);
+  });
+
+  it('replaces an earlier change for the same month', async () => {
+    const { ownerAgent, leaseId } = await leased();
+    const from = periodFromNow(1);
+    await ownerAgent.post(`/api/leases/${leaseId}/terms`).send({ monthlyRent: 1650, effectiveFrom: from });
+
+    const res = await ownerAgent.post(`/api/leases/${leaseId}/terms`).send({ monthlyRent: 1600, effectiveFrom: from });
+
+    expect(res.body.lease.rentChanges).toEqual([expect.objectContaining({ amount: 1600, effectiveFrom: from })]);
+  });
+
+  it("won't change rent for a month that has already been charged", async () => {
+    const { ownerAgent, leaseId } = await leased();
+
+    const res = await ownerAgent.post(`/api/leases/${leaseId}/terms`).send({ monthlyRent: 1650, effectiveFrom: periodFromNow(0) });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('A rent change can start next month at the earliest.');
+  });
+
+  it('extends the end date', async () => {
+    const { tenant, ownerAgent, leaseId } = await leased();
+    const endDate = `${periodFromNow(14)}-28`;
+
+    const res = await ownerAgent.post(`/api/leases/${leaseId}/terms`).send({ endDate });
+
+    expect(res.body.lease.endDate).toBe(`${endDate}T00:00:00.000Z`);
+    expect((await Notification.findOne({ recipient: tenant._id, type: 'lease_terms_changed' })).body).toMatch(/^The lease now ends on /);
+  });
+
+  it.each([
+    ['nothing', {}, 'Nothing to change'],
+    ['rent without a month', { monthlyRent: 1700 }, 'Give both the new rent and the month it starts'],
+    ['a malformed month', { monthlyRent: 1700, effectiveFrom: '2027-13' }, 'Choose the month the new rent starts'],
+    ['an end date in the past', { endDate: '2020-01-01' }, 'The new end date must be in the future.'],
+  ])('rejects %s', async (_, body, message) => {
+    const { ownerAgent, leaseId } = await leased();
+
+    const res = await ownerAgent.post(`/api/leases/${leaseId}/terms`).send(body);
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe(message);
+  });
+
+  it('is only for the owner of an active lease', async () => {
+    const { ownerAgent, tenantAgent, leaseId } = await leased();
+    const body = { monthlyRent: 1650, effectiveFrom: periodFromNow(2) };
+
+    expect((await tenantAgent.post(`/api/leases/${leaseId}/terms`).send(body)).status).toBe(404);
+    await ownerAgent.post(`/api/leases/${leaseId}/end`).send({});
+    expect((await ownerAgent.post(`/api/leases/${leaseId}/terms`).send(body)).status).toBe(409);
+  });
+});
+
 describe('rental income', () => {
   it('totals expected and collected rent by month for the owner', async () => {
     const { ownerAgent, tenantAgent, view, leaseId } = await leased();

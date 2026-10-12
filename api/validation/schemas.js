@@ -530,3 +530,22 @@ export const flagContentSchema = z.object({
   }),
   details: z.string().trim().max(500, 'Details must be at most 500 characters').optional().default(''),
 });
+
+export const changeLeaseTermsSchema = z
+  .object({
+    monthlyRent: z.coerce
+      .number({ invalid_type_error: 'Rent must be a number' })
+      .min(1, 'Rent must be at least 1')
+      .max(1_000_000, 'Rent is too large')
+      .optional(),
+    effectiveFrom: z
+      .string()
+      .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Choose the month the new rent starts')
+      .optional(),
+    endDate: optionalDate,
+  })
+  .refine((v) => (v.monthlyRent === undefined) === (v.effectiveFrom === undefined), {
+    message: 'Give both the new rent and the month it starts',
+    path: ['effectiveFrom'],
+  })
+  .refine((v) => v.monthlyRent !== undefined || v.endDate !== undefined, { message: 'Nothing to change' });

@@ -36,6 +36,7 @@ export const NOTIFICATION_TYPES = [
   'inspection_disputed',
   'content_removed',
   'rent_reminder',
+  'lease_terms_changed',
 ];
 
 const notificationSchema = new mongoose.Schema(

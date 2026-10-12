@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+  changeTerms,
   createLease,
   endLease,
   exportLedger,
@@ -14,7 +15,13 @@ import {
 import { verifyToken } from '../utils/verifyUser.js';
 import { validateObjectId } from '../utils/validateObjectId.js';
 import { validate } from '../validation/validate.js';
-import { createLeaseSchema, endLeaseSchema, recordRentPaymentSchema, waiveRentSchema } from '../validation/schemas.js';
+import {
+  changeLeaseTermsSchema,
+  createLeaseSchema,
+  endLeaseSchema,
+  recordRentPaymentSchema,
+  waiveRentSchema,
+} from '../validation/schemas.js';
 
 const router = express.Router();
 
@@ -29,6 +36,7 @@ router.post('/', validate(createLeaseSchema), createLease);
 router.get('/:id', getLease);
 router.get('/:id/export', exportLedger);
 router.post('/:id/end', validate(endLeaseSchema), endLease);
+router.post('/:id/terms', validate(changeLeaseTermsSchema), changeTerms);
 router.post('/:id/charges/:chargeId/pay', payCharge);
 router.post('/:id/charges/:chargeId/record', validate(recordRentPaymentSchema), recordPayment);
 router.post('/:id/charges/:chargeId/waive', validate(waiveRentSchema), waiveCharge);

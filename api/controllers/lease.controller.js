@@ -12,10 +12,19 @@ import {
   incomeByPeriod,
   periodLabel,
   periodsBetween,
+  nextPeriod,
+  periodKey,
   recentPeriods,
+  rentForPeriod,
   summarizeCharges,
 } from '../utils/rent.js';
-import { notifyLeaseCreated, notifyLeaseEnded, notifyRentPaid, notifyRentWaived } from '../utils/notifications.js';
+import {
+  notifyLeaseCreated,
+  notifyLeaseEnded,
+  notifyLeaseTermsChanged,
+  notifyRentPaid,
+  notifyRentWaived,
+} from '../utils/notifications.js';
 
 const populate = (query) =>
   query
@@ -42,7 +51,7 @@ export const syncCharges = async (lease, today = new Date()) => {
       updateOne: {
         filter: { lease: lease._id, period },
         update: {
-          $setOnInsert: { lease: lease._id, period, amount: lease.monthlyRent, dueDate: dueDateFor(period, lease.dueDay) },
+          $setOnInsert: { lease: lease._id, period, amount: rentForPeriod(lease, period), dueDate: dueDateFor(period, lease.dueDay) },
         },
         upsert: true,
       },
@@ -68,6 +77,7 @@ const leaseView = async (lease, userId) => {
     lease,
     charges: charges.map((c) => withState(c, today)),
     summary: summarizeCharges(charges, today),
+    currentRent: rentForPeriod(lease, periodKey(today)),
     viewer: { role: roleOf(lease, userId) },
   };
 };
@@ -163,6 +173,7 @@ export const listLeases = async (req, res, next) => {
     res.status(200).json(
       leases.map((lease) => ({
         ...lease.toObject(),
+        currentRent: rentForPeriod(lease, periodKey(today)),
         summary: summarizeCharges(
           charges.filter((c) => c.lease.toString() === lease._id.toString()),
           today
@@ -341,6 +352,56 @@ export const endLease = async (req, res, next) => {
       recipient: lease.tenant._id,
       listingName: lease.listing?.name ?? 'your home',
       endDate,
+      leaseId: lease._id,
+    });
+    res.status(200).json(await leaseView(lease, req.user.id));
+  } catch (error) {
+    next(error);
+  }
+};
+
+// The owner schedules a rent change and/or moves the end date. A change
+// must start next month or later, so months already charged never change.
+export const changeTerms = async (req, res, next) => {
+  try {
+    const lease = await loadLease(req, next, 'owner');
+    if (!lease) return;
+    if (lease.status !== 'active') return next(errorHandler(409, 'This lease has ended.'));
+
+    const { monthlyRent, effectiveFrom, endDate } = req.body;
+    const today = new Date();
+    const changes = {};
+
+    if (monthlyRent !== undefined) {
+      const firstAllowed = nextPeriod(periodKey(today));
+      if (effectiveFrom < firstAllowed) {
+        return next(errorHandler(400, 'A rent change can start next month at the earliest.'));
+      }
+      if (lease.endDate && effectiveFrom > periodKey(lease.endDate) && !endDate) {
+        return next(errorHandler(400, 'That month is after the lease ends.'));
+      }
+      // A newer change for the same month replaces the old one.
+      lease.rentChanges = [
+        ...lease.rentChanges.filter((c) => c.effectiveFrom !== effectiveFrom),
+        { amount: monthlyRent, effectiveFrom },
+      ];
+      changes.rent = { amount: monthlyRent, effectiveFrom };
+    }
+
+    if (endDate !== undefined) {
+      if (endDate <= today || endDate <= lease.startDate) {
+        return next(errorHandler(400, 'The new end date must be in the future.'));
+      }
+      lease.endDate = endDate;
+      changes.endDate = endDate;
+    }
+
+    await lease.save();
+    await notifyLeaseTermsChanged({
+      recipient: lease.tenant._id,
+      listingName: lease.listing?.name ?? 'your home',
+      currency: lease.currency,
+      ...changes,
       leaseId: lease._id,
     });
     res.status(200).json(await leaseView(lease, req.user.id));
