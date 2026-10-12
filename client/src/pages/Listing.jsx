@@ -25,12 +25,18 @@ import ApplyForm from '../components/ApplyForm';
 import ListingGrid from '../components/ListingGrid';
 import ListingsMap from '../components/ListingsMap';
 import ListingReviews from '../components/ListingReviews';
+import PriceHistory from '../components/PriceHistory';
+import ListingQuestions from '../components/ListingQuestions';
+import OpenHouses from '../components/OpenHouses';
+import MortgageCalculator from '../components/MortgageCalculator';
 import ListingAvailability from '../components/ListingAvailability';
 import ReportListing from '../components/ReportListing';
 import RequestViewing from '../components/RequestViewing';
 import { apiFetch } from '../utils/apiFetch';
 import { recordView } from '../utils/recordView';
 import { recordRecentlyViewed } from '../hooks/useRecentlyViewed';
+import ResponseStats from '../components/ResponseStats';
+import PriceComparison from '../components/PriceComparison';
 import { amenityLabels, propertyTypeLabel } from '../utils/listingDetails';
 
 // https://sabe.io/blog/javascript-format-numbers-commas#:~:text=The%20best%20way%20to%20format,format%20the%20number%20with%20commas.
@@ -235,6 +241,8 @@ export default function Listing() {
               )}
             </div>
 
+            <PriceComparison listingId={listing._id} />
+
             <div className='flex gap-2'>
               <FavoriteButton listingId={listing._id} className='shrink-0 border border-slate-200' />
               <CompareButton listingId={listing._id} className='shrink-0 h-10 w-10 border border-slate-200' />
@@ -265,6 +273,8 @@ export default function Listing() {
                 <ListingAvailability listingId={listing._id} />
               </div>
             )}
+
+            {!isOwner && <ResponseStats ownerId={listing.userRef} />}
 
             {currentUser && !isOwner && (
               <div className='flex flex-col gap-3 border-t border-slate-100 pt-4'>
@@ -304,7 +314,11 @@ export default function Listing() {
             </section>
           )}
 
+          {listing.type === 'sale' && <MortgageCalculator price={listing.offer ? listing.discountPrice : listing.regularPrice} />}
+          <OpenHouses listingId={listing._id} isOwner={isOwner} />
+          <PriceHistory listingId={listing._id} perMonth={listing.type === 'rent'} />
           <ListingReviews listingId={listing._id} />
+          <ListingQuestions listingId={listing._id} />
           {currentUser && !isOwner && <ReportListing listingId={listing._id} />}
         </div>
 

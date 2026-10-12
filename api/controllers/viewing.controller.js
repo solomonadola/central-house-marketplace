@@ -4,6 +4,7 @@ import User from '../models/user.model.js';
 import AvailabilitySlot from '../models/availabilitySlot.model.js';
 import { errorHandler } from '../utils/error.js';
 import { addMessage, getOrCreateConversation } from '../utils/conversations.js';
+import { blockedError, isBlockedBetween } from '../utils/blocks.js';
 import { notifyViewingRequested, notifyViewingResponse } from '../utils/notifications.js';
 
 // e.g. "Sat, Oct 18 at 10:00 AM" in the requester's time zone.
@@ -38,6 +39,7 @@ export const createViewing = async (req, res, next) => {
     if (listing.userRef === req.user.id) {
       return next(errorHandler(400, "You can't book a viewing of your own listing!"));
     }
+    if (await isBlockedBetween(req.user.id, listing.userRef)) return next(blockedError());
 
     const active = await Viewing.exists({
       listing: listing._id,

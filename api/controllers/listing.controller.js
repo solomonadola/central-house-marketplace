@@ -12,6 +12,14 @@ import { geocodeAddress } from '../utils/geocode.js';
 import { notifyListingDeleted } from '../utils/notifications.js';
 import { notifySavedSearchMatches } from '../utils/savedSearch.js';
 import { AMENITIES, PROPERTY_TYPES } from '../constants/listing.js';
+import PriceChange from '../models/priceChange.model.js';
+import ListingQuestion from '../models/listingQuestion.model.js';
+import OpenHouse from '../models/openHouse.model.js';
+import MaintenanceRequest from '../models/maintenanceRequest.model.js';
+import { removeLeases } from '../utils/leases.js';
+import ContentFlag from '../models/contentFlag.model.js';
+import { comparePrice } from '../utils/priceComparison.js';
+import { dropFromPeak, recordInitialPrice, recordPriceChange } from '../utils/priceHistory.js';
 
 // Fields a client may set. Ownership (userRef) is always taken from the
 // auth token so users can't create or transfer listings as someone else.
@@ -37,16 +45,25 @@ const pickEditable = (body) =>
     EDITABLE_FIELDS.filter((key) => key in body).map((key) => [key, body[key]])
   );
 
+// Creates a listing for a user from already-validated fields: geocodes the
+// address, alerts matching saved searches and records the first price.
+// Shared by POST /create and publishing a draft.
+export const createListingFor = async (userId, body) => {
+  const fields = pickEditable(body);
+  const location = await geocodeAddress(fields.address);
+  const listing = await Listing.create({
+    ...fields,
+    ...(location && { location }),
+    userRef: userId,
+  });
+  await notifySavedSearchMatches(listing);
+  await recordInitialPrice(listing);
+  return listing;
+};
+
 export const createListing = async (req, res, next) => {
   try {
-    const fields = pickEditable(req.body);
-    const location = await geocodeAddress(fields.address);
-    const listing = await Listing.create({
-      ...fields,
-      ...(location && { location }),
-      userRef: req.user.id,
-    });
-    await notifySavedSearchMatches(listing);
+    const listing = await createListingFor(req.user.id, req.body);
     return res.status(201).json(listing);
   } catch (error) {
     next(error);
@@ -69,13 +86,25 @@ export const deleteListing = async (req, res, next) => {
     // Let everyone who saved it know before removing it from their favorites.
     const favoriters = await User.find({ favorites: listing._id }, '_id');
     await Promise.all(favoriters.map((u) => notifyListingDeleted({ recipient: u._id, listingName: listing.name })));
-    await User.updateMany({ favorites: listing._id }, { $pull: { favorites: listing._id } });
-    await Review.deleteMany({ listing: listing._id });
-    await Viewing.deleteMany({ listing: listing._id });
-    await AvailabilitySlot.deleteMany({ listing: listing._id });
-    await Application.deleteMany({ listing: listing._id });
-    await Payment.deleteMany({ listing: listing._id });
-    await ListingViewDay.deleteMany({ listing: listing._id });
+    // The rest of the cleanup is independent, so run it in parallel.
+    const byListing = { listing: listing._id };
+    await Promise.all([
+      User.updateMany({ favorites: listing._id }, { $pull: { favorites: listing._id } }),
+      removeLeases(byListing),
+      ...[
+        Review,
+        Viewing,
+        AvailabilitySlot,
+        Application,
+        Payment,
+        ListingViewDay,
+        PriceChange,
+        ListingQuestion,
+        OpenHouse,
+        MaintenanceRequest,
+        ContentFlag,
+      ].map((Model) => Model.deleteMany(byListing)),
+    ]);
     res.status(200).json('Listing has been deleted!');
   } catch (error) {
     next(error);
@@ -105,6 +134,7 @@ export const updateListing = async (req, res, next) => {
       new: true,
       runValidators: true,
     });
+    await recordPriceChange(listing, updatedListing);
     res.status(200).json(updatedListing);
   } catch (error) {
     next(error);
@@ -356,6 +386,38 @@ export const getSimilarListings = async (req, res, next) => {
     });
 
     res.status(200).json(candidates.slice(0, MAX_SIMILAR));
+  } catch (error) {
+    next(error);
+  }
+};
+
+// A listing's price history, newest first, with how far it has dropped from
+// its highest price. Hidden and paused listings follow the same visibility
+// rules as the listing page.
+export const getPriceHistory = async (req, res, next) => {
+  try {
+    const listing = await Listing.findById(req.params.id, 'userRef hidden active');
+    const canSeeHidden = req.user && (req.user.id === listing?.userRef || req.user.role === 'admin');
+    if (!listing || ((listing.hidden || listing.active === false) && !canSeeHidden)) {
+      return next(errorHandler(404, 'Listing not found!'));
+    }
+
+    const history = await PriceChange.find({ listing: listing._id }).sort({ createdAt: -1, _id: -1 }).limit(50).lean();
+    res.status(200).json({ history, dropFromPeak: dropFromPeak(history) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// How this listing's price compares with similar homes.
+export const getPriceComparison = async (req, res, next) => {
+  try {
+    const listing = await Listing.findById(req.params.id, 'type bedrooms regularPrice discountPrice offer location hidden active userRef');
+    const canSeeHidden = req.user && (req.user.id === listing?.userRef || req.user.role === 'admin');
+    if (!listing || ((listing.hidden || listing.active === false) && !canSeeHidden)) {
+      return next(errorHandler(404, 'Listing not found!'));
+    }
+    res.status(200).json({ comparison: await comparePrice(listing) });
   } catch (error) {
     next(error);
   }

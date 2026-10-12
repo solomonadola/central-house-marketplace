@@ -35,7 +35,7 @@ export default function Header() {
     'absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white';
 
   return (
-    <header className='sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur'>
+    <header className='sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur print:hidden'>
       <div className='container-page flex flex-wrap items-center gap-x-3 gap-y-2 py-3'>
         <Link to='/' aria-label='Central House Marketplace home'>
           <Logo />

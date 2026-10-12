@@ -169,4 +169,35 @@ describe('ListingReviews', () => {
       expect(fetchMock.mock.calls.map(([url]) => url)).toContain('/api/reviews/listing/l1?sort=helpful');
     });
   });
+
+  it('lets signed-in users report other people\'s reviews', async () => {
+    renderWithProviders(<ListingReviews listingId='l1' />, { currentUser: { _id: 'me' } });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Report' }));
+
+    expect(screen.getByRole('form', { name: 'Report this review' })).toBeInTheDocument();
+  });
+
+  it("doesn't offer reporting to signed-out visitors", async () => {
+    renderWithProviders(<ListingReviews listingId='l1' />);
+
+    await screen.findByText('Great landlord!');
+    expect(screen.queryByRole('button', { name: 'Report' })).not.toBeInTheDocument();
+  });
+
+  it('tells authors when a moderator removed their review', async () => {
+    reviewsResponse = {
+      ...reviewsResponse,
+      viewer: {
+        canReview: true,
+        isOwner: false,
+        ownReview: { _id: 'r5', rating: 1, comment: 'Spam', removed: true, removedReason: 'Advertising' },
+      },
+    };
+    renderWithProviders(<ListingReviews listingId='l1' />, { currentUser: { _id: 'me' } });
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      "A moderator removed your review, so it isn't shown to others: Advertising"
+    );
+  });
 });

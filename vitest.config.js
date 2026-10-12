@@ -18,5 +18,9 @@ export default defineConfig({
     },
     // Starting the in-memory MongoDB binary can be slow on first run.
     hookTimeout: 60000,
+    // These are integration tests against a real (in-memory) MongoDB with
+    // every file running in parallel; under that load the busiest tests can
+    // pass 5s, so allow more before calling a slow test a failure.
+    testTimeout: 15000,
   },
 });

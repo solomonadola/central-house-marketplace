@@ -33,6 +33,14 @@ import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
 import AdminRoute from './components/AdminRoute';
+import OpenHousesPage from './pages/OpenHousesPage';
+import Maintenance from './pages/Maintenance';
+import MaintenanceDetail from './pages/MaintenanceDetail';
+import Rent from './pages/Rent';
+import LeaseDetail from './pages/LeaseDetail';
+import InspectionDetail from './pages/InspectionDetail';
+import RentReceipt from './pages/RentReceipt';
+import NotFound from './pages/NotFound';
 import AdminUserDetail from './components/admin/AdminUserDetail';
 
 export default function App() {
@@ -53,6 +61,7 @@ export default function App() {
         <Route path='/verify-email/:token' element={<VerifyEmail />} />
         <Route path='/about' element={<About />} />
         <Route path='/search' element={<Search />} />
+        <Route path='/open-houses' element={<OpenHousesPage />} />
         <Route path='/compare' element={<Compare />} />
         <Route path='/owner/:ownerId' element={<OwnerProfile />} />
         <Route path='/recently-viewed' element={<RecentlyViewed />} />
@@ -65,6 +74,12 @@ export default function App() {
           <Route path='/saved' element={<Saved />} />
           <Route path='/saved-searches' element={<SavedSearches />} />
           <Route path='/viewings' element={<Viewings />} />
+          <Route path='/maintenance' element={<Maintenance />} />
+          <Route path='/maintenance/:requestId' element={<MaintenanceDetail />} />
+          <Route path='/rent' element={<Rent />} />
+          <Route path='/leases/:leaseId' element={<LeaseDetail />} />
+          <Route path='/leases/:leaseId/receipts/:chargeId' element={<RentReceipt />} />
+          <Route path='/inspections/:inspectionId' element={<InspectionDetail />} />
           <Route path='/applications' element={<Applications />} />
           <Route path='/payments' element={<Payments />} />
           <Route path='/settings' element={<Settings />} />
@@ -82,6 +97,7 @@ export default function App() {
           <Route path='/admin' element={<Admin />} />
           <Route path='/admin/user/:userId' element={<AdminUserDetail />} />
         </Route>
+        <Route path='*' element={<NotFound />} />
       </Routes>
       </ErrorBoundary>
       </div>

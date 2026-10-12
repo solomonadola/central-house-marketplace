@@ -15,6 +15,13 @@ import {
 import { validate } from '../validation/validate.js';
 import { moderationReasonSchema, updateReportSchema } from '../validation/schemas.js';
 import { getAuditSummary, listAuditLogs } from '../controllers/auditLog.controller.js';
+import {
+  dismissFlags,
+  listFlaggedContent,
+  listRemovedContent,
+  removeContent,
+  restoreContent,
+} from '../controllers/contentFlag.controller.js';
 import { verifyToken } from '../utils/verifyUser.js';
 import { requireAdmin } from '../utils/requireAdmin.js';
 import { validateObjectId } from '../utils/validateObjectId.js';
@@ -35,6 +42,12 @@ router.get('/users', listUsers);
 router.get('/users/:id', getUserDetail);
 router.post('/users/:id/suspend', validate(moderationReasonSchema), suspendUser);
 router.post('/users/:id/unsuspend', unsuspendUser);
+
+router.get('/content/flagged', listFlaggedContent);
+router.get('/content/removed', listRemovedContent);
+router.post('/content/:type/:id/remove', validate(moderationReasonSchema), removeContent);
+router.post('/content/:type/:id/restore', restoreContent);
+router.post('/content/:type/:id/dismiss', dismissFlags);
 
 router.get('/audit', listAuditLogs);
 router.get('/audit/summary', getAuditSummary);

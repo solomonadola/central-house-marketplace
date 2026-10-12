@@ -26,6 +26,11 @@ mongoose
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}!`);
     });
+    // Without a separate scheduler, RENT_REMINDERS=daily sends rent
+    // reminders from this process.
+    if (process.env.RENT_REMINDERS === 'daily') {
+      import('./utils/rentReminders.js').then(({ startDailyRentReminders }) => startDailyRentReminders());
+    }
   })
   .catch((err) => {
     console.error('Could not connect to MongoDB:', err.message);

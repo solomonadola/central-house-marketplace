@@ -7,6 +7,7 @@ import { suspendedError } from '../utils/verifyUser.js';
 import { createToken, hashToken } from '../utils/tokens.js';
 import { appUrl, sendMail } from '../utils/mailer.js';
 import { passwordResetEmail } from '../utils/emails.js';
+import { checkCode, issueChallenge, readChallenge } from '../utils/twoFactor.js';
 import { sendVerificationEmail } from '../utils/emailVerification.js';
 
 export const signup = async (req, res, next) => {
@@ -30,6 +31,12 @@ export const signin = async (req, res, next) => {
     const validPassword = bcryptjs.compareSync(password, validUser.password);
     if (!validPassword) return next(errorHandler(401, 'Wrong credentials!'));
     if (validUser.suspended) return next(suspendedError());
+    // With two-step sign-in on, the password alone doesn't create a
+    // session: the user gets an emailed code and a challenge token instead.
+    if (validUser.twoFactorEnabled) {
+      const { challengeToken } = await issueChallenge(validUser);
+      return res.status(200).json({ twoFactorRequired: true, challengeToken, email: maskEmail(validUser.email) });
+    }
     const { password: pass, ...rest } = validUser._doc;
     setAuthCookie(res, validUser)
       .status(200)
@@ -182,6 +189,54 @@ export const resendVerification = async (req, res, next) => {
 
     await sendVerificationEmail(user);
     res.status(200).json({ message: `We sent a new confirmation link to ${user.email}.` });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// "s****@example.com", so the code screen can say where the code went
+// without revealing the whole address.
+export const maskEmail = (email) => {
+  const [name, domain] = String(email).split('@');
+  if (!domain) return email;
+  return `${name.slice(0, 1)}${'*'.repeat(Math.max(1, Math.min(name.length - 1, 4)))}@${domain}`;
+};
+
+const TWO_FACTOR_ERRORS = {
+  expired: [400, 'This code has expired. Request a new one.'],
+  locked: [429, 'Too many wrong codes. Request a new one.'],
+  wrong: [401, "That code isn't right. Check the email and try again."],
+};
+
+// Second step of sign-in: checks the emailed code and starts the session.
+export const verifyTwoFactor = async (req, res, next) => {
+  try {
+    const userId = readChallenge(req.body.challengeToken);
+    if (!userId) return next(errorHandler(401, 'Your sign-in session expired. Please sign in again.'));
+
+    const result = await checkCode(userId, req.body.code);
+    if (result !== 'ok') return next(errorHandler(...TWO_FACTOR_ERRORS[result]));
+
+    const user = await User.findById(userId).select('+tokenVersion');
+    if (!user) return next(errorHandler(401, 'Your sign-in session expired. Please sign in again.'));
+    if (user.suspended) return next(suspendedError());
+
+    const { password: pass, tokenVersion, ...rest } = user._doc;
+    setAuthCookie(res, user).status(200).json(rest);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resendTwoFactor = async (req, res, next) => {
+  try {
+    const userId = readChallenge(req.body.challengeToken);
+    const user = userId && (await User.findById(userId));
+    if (!user || !user.twoFactorEnabled) {
+      return next(errorHandler(401, 'Your sign-in session expired. Please sign in again.'));
+    }
+    const { challengeToken } = await issueChallenge(user);
+    res.status(200).json({ challengeToken, email: maskEmail(user.email) });
   } catch (error) {
     next(error);
   }

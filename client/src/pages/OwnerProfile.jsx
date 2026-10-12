@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { FaCalendarAlt, FaStar } from 'react-icons/fa';
 import ListingGrid from '../components/ListingGrid';
+import ResponseStats from '../components/ResponseStats';
 import { useFetchJson } from '../hooks/useFetchJson';
 
 const DEFAULT_AVATAR =
@@ -38,6 +39,7 @@ export default function OwnerProfile() {
           <p className='mt-1 flex items-center gap-2 text-sm text-slate-500'>
             <FaCalendarAlt aria-hidden='true' /> Member since {joined}
           </p>
+          <ResponseStats ownerId={ownerId} className='mt-1' />
           <div className='mt-2 flex flex-wrap items-center gap-4 text-sm'>
             <span className='flex items-center gap-1.5 text-slate-700'>
               <FaStar className='text-amber-500' aria-hidden='true' />

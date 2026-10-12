@@ -199,3 +199,166 @@ export const notifyPaymentRefunded = ({ recipient, amount, currency, listingName
     link: '/payments',
     email: true,
   });
+
+
+export const notifyPriceDrop = ({ recipient, listingId, listingName, oldPrice, newPrice, perMonth }) =>
+  notify({
+    recipient,
+    type: 'price_drop',
+    title: `Price drop on "${listingName}"`,
+    body: `Now ${money(newPrice)}${perMonth ? ' / month' : ''}, down from ${money(oldPrice)}.`,
+    link: `/listing/${listingId}`,
+    meta: { listingId, oldPrice, newPrice },
+    email: true,
+  });
+
+export const notifyQuestionAsked = ({ recipient, askerName, listingId, listingName }) =>
+  notify({
+    recipient,
+    type: 'question_asked',
+    title: `${askerName} asked a question`,
+    body: `About "${listingName}"`,
+    link: `/listing/${listingId}#questions`,
+    meta: { listingId },
+    email: true,
+  });
+
+export const notifyQuestionAnswered = ({ recipient, listingId, listingName }) =>
+  notify({
+    recipient,
+    type: 'question_answered',
+    title: 'Your question was answered',
+    body: `About "${listingName}"`,
+    link: `/listing/${listingId}#questions`,
+    meta: { listingId },
+  });
+
+export const notifyOpenHouseCancelled = ({ recipients, listingId, listingName, when }) =>
+  notifyMany(recipients, {
+    type: 'open_house_cancelled',
+    title: 'An open house you planned to attend was cancelled',
+    body: `"${listingName}" on ${when}`,
+    link: `/listing/${listingId}`,
+    meta: { listingId },
+    email: true,
+  });
+
+export const notifyMaintenanceRequested = ({ recipient, tenantName, title, urgency, requestId }) =>
+  notify({
+    recipient,
+    type: 'maintenance_request',
+    title: `${urgency === 'urgent' ? 'Urgent: ' : ''}${tenantName} reported a problem`,
+    body: title,
+    link: `/maintenance/${requestId}`,
+    meta: { requestId },
+    email: true,
+  });
+
+const STATUS_WORDS = { open: 'reopened', in_progress: 'in progress', resolved: 'resolved', closed: 'closed' };
+
+export const notifyMaintenanceUpdated = ({ recipient, authorName, title, status, requestId }) =>
+  notify({
+    recipient,
+    type: 'maintenance_update',
+    title: status ? `"${title}" is now ${STATUS_WORDS[status]}` : `${authorName} replied about "${title}"`,
+    body: status ? `Updated by ${authorName}` : '',
+    link: `/maintenance/${requestId}`,
+    meta: { requestId, status: status ?? null },
+  });
+
+export const notifyLeaseCreated = ({ recipient, ownerName, listingName, monthlyRent, currency, leaseId }) =>
+  notify({
+    recipient,
+    type: 'lease_created',
+    title: `${ownerName} set up your lease`,
+    body: `"${listingName}" at ${money(monthlyRent, currency)} / month`,
+    link: `/leases/${leaseId}`,
+    meta: { leaseId },
+    email: true,
+  });
+
+export const notifyLeaseEnded = ({ recipient, listingName, endDate, leaseId }) =>
+  notify({
+    recipient,
+    type: 'lease_ended',
+    title: `Your lease for "${listingName}" has ended`,
+    body: `Last day: ${new Date(endDate).toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: 'UTC' })}`,
+    link: `/leases/${leaseId}`,
+    meta: { leaseId },
+    email: true,
+  });
+
+export const notifyRentPaid = ({ recipient, tenantName, amount, currency, periodLabel, leaseId }) =>
+  notify({
+    recipient,
+    type: 'rent_paid',
+    title: `${tenantName} paid rent for ${periodLabel}`,
+    body: money(amount, currency),
+    link: `/leases/${leaseId}`,
+    meta: { leaseId },
+  });
+
+export const notifyRentWaived = ({ recipient, amount, currency, periodLabel, leaseId }) =>
+  notify({
+    recipient,
+    type: 'rent_waived',
+    title: `Rent for ${periodLabel} was waived`,
+    body: `${money(amount, currency)} no longer owed`,
+    link: `/leases/${leaseId}`,
+    meta: { leaseId },
+  });
+
+const INSPECTION_NAMES = { move_in: 'move-in', move_out: 'move-out' };
+
+export const notifyInspectionSubmitted = ({ recipient, ownerName, kind, listingName, inspectionId }) =>
+  notify({
+    recipient,
+    type: 'inspection_submitted',
+    title: `${ownerName} sent you the ${INSPECTION_NAMES[kind]} report`,
+    body: `Check it for "${listingName}" and sign it or tell them what's wrong.`,
+    link: `/inspections/${inspectionId}`,
+    meta: { inspectionId },
+    email: true,
+  });
+
+export const notifyInspectionAnswered = ({ recipient, tenantName, kind, signed, inspectionId }) =>
+  notify({
+    recipient,
+    type: signed ? 'inspection_signed' : 'inspection_disputed',
+    title: `${tenantName} ${signed ? 'signed' : 'disputed'} the ${INSPECTION_NAMES[kind]} report`,
+    link: `/inspections/${inspectionId}`,
+    meta: { inspectionId },
+    email: !signed,
+  });
+
+export const notifyContentRemoved = ({ recipient, targetType, listingName, listingId, reason }) =>
+  notify({
+    recipient,
+    type: 'content_removed',
+    title: `Your ${targetType} on "${listingName}" was removed`,
+    body: reason ? `Reason: ${reason}` : 'It broke the community guidelines.',
+    link: `/listing/${listingId}`,
+    meta: { listingId, targetType },
+    email: true,
+  });
+
+export const notifyLeaseTermsChanged = ({ recipient, listingName, currency, rent, endDate, leaseId }) => {
+  const parts = [];
+  if (rent) {
+    const [year, month] = rent.effectiveFrom.split('-').map(Number);
+    const from = new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    parts.push(`Rent becomes ${money(rent.amount, currency)} / month from ${from}.`);
+  }
+  if (endDate) {
+    parts.push(`The lease now ends on ${new Date(endDate).toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: 'UTC' })}.`);
+  }
+  return notify({
+    recipient,
+    type: 'lease_terms_changed',
+    title: `The terms of your lease for "${listingName}" changed`,
+    body: parts.join(' '),
+    link: `/leases/${leaseId}`,
+    meta: { leaseId },
+    email: true,
+  });
+};

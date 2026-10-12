@@ -5,6 +5,7 @@ import User from '../models/user.model.js';
 import { errorHandler } from '../utils/error.js';
 import { addMessage, findParticipant, getOrCreateConversation } from '../utils/conversations.js';
 import { notifyNewMessage } from '../utils/notifications.js';
+import { blockedError, isBlockedBetween } from '../utils/blocks.js';
 import { sendCsv, toCsv } from '../utils/csv.js';
 
 export const startConversation = async (req, res, next) => {
@@ -15,6 +16,7 @@ export const startConversation = async (req, res, next) => {
     if (listing.userRef === req.user.id) {
       return next(errorHandler(400, "You can't message yourself about your own listing!"));
     }
+    if (await isBlockedBetween(req.user.id, listing.userRef)) return next(blockedError());
 
     const conversation = await getOrCreateConversation(listing, req.user.id);
     const message = await addMessage(conversation, req.user.id, body);
@@ -39,6 +41,8 @@ export const sendMessage = async (req, res, next) => {
     if (!conversation || !findParticipant(conversation, req.user.id)) {
       return next(errorHandler(404, 'Conversation not found!'));
     }
+    const other = conversation.participants.find((p) => p.user.toString() !== req.user.id);
+    if (await isBlockedBetween(req.user.id, other?.user)) return next(blockedError());
 
     const message = await addMessage(conversation, req.user.id, req.body.body);
 

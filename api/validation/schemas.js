@@ -308,3 +308,244 @@ export const createPaymentSchema = z.object({
     .optional()
     .default('USD'),
 });
+
+export const askQuestionSchema = z.object({
+  question: z
+    .string({ required_error: 'Question is required' })
+    .trim()
+    .min(5, 'Question must be at least 5 characters')
+    .max(500, 'Question must be at most 500 characters'),
+});
+
+export const answerQuestionSchema = z.object({
+  answer: z
+    .string({ required_error: 'Answer is required' })
+    .trim()
+    .min(1, 'Answer cannot be empty')
+    .max(1000, 'Answer must be at most 1000 characters'),
+});
+
+const MAX_OPEN_HOUSE_HOURS = 8;
+const MAX_OPEN_HOUSE_DAYS_AHEAD = 90;
+
+export const createOpenHouseSchema = z
+  .object({
+    startsAt: z.coerce
+      .date({ errorMap: () => ({ message: 'Please choose a valid start time' }) })
+      .refine((d) => d > new Date(), 'The open house must start in the future')
+      .refine(
+        (d) => d < new Date(Date.now() + MAX_OPEN_HOUSE_DAYS_AHEAD * 24 * 60 * 60 * 1000),
+        `Open houses can be scheduled up to ${MAX_OPEN_HOUSE_DAYS_AHEAD} days ahead`
+      ),
+    endsAt: z.coerce.date({ errorMap: () => ({ message: 'Please choose a valid end time' }) }),
+    note: z.string().trim().max(300, 'Note must be at most 300 characters').optional().default(''),
+    capacity: z.coerce
+      .number({ invalid_type_error: 'Capacity must be a number' })
+      .int('Capacity must be a whole number')
+      .min(0, 'Capacity cannot be negative')
+      .max(500, 'Capacity must be at most 500')
+      .optional()
+      .default(0),
+  })
+  .refine((v) => v.endsAt > v.startsAt, { message: 'The end time must be after the start time', path: ['endsAt'] })
+  .refine((v) => v.endsAt - v.startsAt <= MAX_OPEN_HOUSE_HOURS * 60 * 60 * 1000, {
+    message: `An open house can last at most ${MAX_OPEN_HOUSE_HOURS} hours`,
+    path: ['endsAt'],
+  });
+
+export const createMaintenanceSchema = z.object({
+  listingId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid listing id'),
+  title: z
+    .string({ required_error: 'Please describe the problem' })
+    .trim()
+    .min(5, 'Title must be at least 5 characters')
+    .max(100, 'Title must be at most 100 characters'),
+  description: z.string().trim().max(2000, 'Description must be at most 2000 characters').optional().default(''),
+  category: z.enum(['plumbing', 'electrical', 'heating', 'appliance', 'pest', 'structural', 'other'], {
+    errorMap: () => ({ message: 'Please choose a category' }),
+  }),
+  urgency: z
+    .enum(['low', 'normal', 'urgent'], { errorMap: () => ({ message: "Urgency must be 'low', 'normal' or 'urgent'" }) })
+    .optional()
+    .default('normal'),
+});
+
+export const maintenanceUpdateSchema = z
+  .object({
+    body: z.string().trim().max(2000, 'Update must be at most 2000 characters').optional().default(''),
+    status: z
+      .enum(['open', 'in_progress', 'resolved', 'closed'], { errorMap: () => ({ message: 'Unknown status' }) })
+      .optional(),
+  })
+  .refine((v) => v.body.length > 0 || v.status, { message: 'Write an update or change the status' });
+
+const quickReplyFields = {
+  title: z
+    .string({ required_error: 'Give the reply a short name' })
+    .trim()
+    .min(1, 'Give the reply a short name')
+    .max(40, 'Name must be at most 40 characters'),
+  body: z
+    .string({ required_error: 'Reply text is required' })
+    .trim()
+    .min(1, 'Reply text is required')
+    .max(1000, 'Reply must be at most 1000 characters'),
+};
+
+export const createQuickReplySchema = z.object(quickReplyFields);
+
+export const updateQuickReplySchema = z
+  .object(quickReplyFields)
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to update' });
+
+const challengeToken = z.string({ required_error: 'Your sign-in session expired' }).min(1, 'Your sign-in session expired');
+
+export const verifyTwoFactorSchema = z.object({
+  challengeToken,
+  code: z
+    .string({ required_error: 'Enter the 6-digit code' })
+    .trim()
+    .regex(/^\d{6}$/, 'Enter the 6-digit code from the email'),
+});
+
+export const resendTwoFactorSchema = z.object({ challengeToken });
+
+export const setTwoFactorSchema = z.object({
+  enabled: z.boolean({ invalid_type_error: 'Enabled must be true or false', required_error: 'Enabled is required' }),
+  password: z.string({ required_error: 'Enter your password to confirm' }).min(1, 'Enter your password to confirm'),
+});
+
+// Drafts may be incomplete, so only types and upper bounds are checked
+// here; publishing runs the full createListingSchema.
+export const listingDraftSchema = z.object({
+  data: z
+    .object({
+      name: z.string().max(62, 'Name must be at most 62 characters'),
+      description: z.string().max(5000, 'Description must be at most 5000 characters'),
+      address: z.string().max(200, 'Address must be at most 200 characters'),
+      regularPrice: z.coerce.number().min(0).max(10_000_000),
+      discountPrice: z.coerce.number().min(0).max(10_000_000),
+      bathrooms: z.coerce.number().int().min(0).max(10),
+      bedrooms: z.coerce.number().int().min(0).max(10),
+      furnished: z.boolean(),
+      parking: z.boolean(),
+      offer: z.boolean(),
+      type: z.enum(['rent', 'sale']),
+      propertyType: z.enum(PROPERTY_TYPES),
+      amenities: z.array(z.enum(AMENITIES)).max(20),
+      imageUrls: z.array(httpUrl('Image must be a URL')).max(6, 'You can upload at most 6 images'),
+    })
+    .partial(),
+});
+
+const MAX_LEASE_YEARS = 10;
+
+export const createLeaseSchema = z
+  .object({
+    applicationId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid application id'),
+    monthlyRent: z.coerce
+      .number({ invalid_type_error: 'Rent must be a number' })
+      .min(1, 'Rent must be at least 1')
+      .max(1_000_000, 'Rent is too large'),
+    currency: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]{3}$/, 'Currency must be a 3-letter code')
+      .optional()
+      .default('USD'),
+    dueDay: z.coerce
+      .number({ invalid_type_error: 'Due day must be a number' })
+      .int('Due day must be a whole number')
+      .min(1, 'Rent must be due between the 1st and the 28th')
+      .max(28, 'Rent must be due between the 1st and the 28th'),
+    startDate: z.coerce.date({ errorMap: () => ({ message: 'Please choose a start date' }) }),
+    endDate: optionalDate,
+    notes: z.string().trim().max(1000, 'Notes must be at most 1000 characters').optional().default(''),
+  })
+  .refine((v) => !v.endDate || v.endDate > v.startDate, {
+    message: 'The end date must be after the start date',
+    path: ['endDate'],
+  })
+  .refine((v) => !v.endDate || v.endDate - v.startDate <= MAX_LEASE_YEARS * 366 * 24 * 60 * 60 * 1000, {
+    message: `A lease can last at most ${MAX_LEASE_YEARS} years`,
+    path: ['endDate'],
+  });
+
+export const recordRentPaymentSchema = z.object({
+  method: z.enum(['bank_transfer', 'cash', 'check', 'other'], {
+    errorMap: () => ({ message: 'Choose how the rent was paid' }),
+  }),
+  note: z.string().trim().max(300, 'Note must be at most 300 characters').optional().default(''),
+});
+
+export const waiveRentSchema = z.object({
+  note: z.string().trim().max(300, 'Note must be at most 300 characters').optional().default(''),
+});
+
+export const endLeaseSchema = z.object({ endDate: optionalDate });
+
+export const createInspectionSchema = z.object({
+  leaseId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid lease id'),
+  kind: z.enum(['move_in', 'move_out'], { errorMap: () => ({ message: "Kind must be 'move_in' or 'move_out'" }) }),
+});
+
+const inspectionItem = z.object({
+  name: z.string().trim().min(1, 'Every item needs a name').max(60, 'Item names must be at most 60 characters'),
+  condition: z.enum(['good', 'fair', 'poor', 'damaged', 'na'], {
+    errorMap: () => ({ message: 'Choose a condition for every item' }),
+  }),
+  note: z.string().trim().max(300, 'Notes must be at most 300 characters').optional().default(''),
+});
+
+export const updateInspectionSchema = z
+  .object({
+    rooms: z
+      .array(
+        z.object({
+          name: z.string().trim().min(1, 'Every room needs a name').max(60, 'Room names must be at most 60 characters'),
+          items: z.array(inspectionItem).max(40, 'A room can have at most 40 items'),
+        })
+      )
+      .max(30, 'A report can have at most 30 rooms'),
+    summary: z.string().trim().max(2000, 'Summary must be at most 2000 characters'),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to update' });
+
+export const disputeInspectionSchema = z.object({
+  reason: z
+    .string({ required_error: 'Tell the owner what is wrong with the report' })
+    .trim()
+    .min(10, 'Tell the owner what is wrong with the report (at least 10 characters)')
+    .max(1000, 'Reason must be at most 1000 characters'),
+});
+
+export const flagContentSchema = z.object({
+  targetType: z.enum(['review', 'question'], { errorMap: () => ({ message: 'You can flag a review or a question' }) }),
+  targetId: z.string().regex(/^[0-9a-f]{24}$/i, 'Invalid id'),
+  reason: z.enum(['spam', 'offensive', 'off_topic', 'personal_info', 'other'], {
+    errorMap: () => ({ message: 'Choose why you are flagging this' }),
+  }),
+  details: z.string().trim().max(500, 'Details must be at most 500 characters').optional().default(''),
+});
+
+export const changeLeaseTermsSchema = z
+  .object({
+    monthlyRent: z.coerce
+      .number({ invalid_type_error: 'Rent must be a number' })
+      .min(1, 'Rent must be at least 1')
+      .max(1_000_000, 'Rent is too large')
+      .optional(),
+    effectiveFrom: z
+      .string()
+      .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Choose the month the new rent starts')
+      .optional(),
+    endDate: optionalDate,
+  })
+  .refine((v) => (v.monthlyRent === undefined) === (v.effectiveFrom === undefined), {
+    message: 'Give both the new rent and the month it starts',
+    path: ['effectiveFrom'],
+  })
+  .refine((v) => v.monthlyRent !== undefined || v.endDate !== undefined, { message: 'Nothing to change' });

@@ -11,6 +11,9 @@ const ACTION_LABELS = {
   resolve_report: { label: 'Resolved report', tone: 'bg-green-100 text-green-800' },
   dismiss_report: { label: 'Dismissed report', tone: 'bg-slate-200 text-slate-700' },
   reopen_report: { label: 'Reopened report', tone: 'bg-amber-100 text-amber-800' },
+  remove_content: { label: 'Removed content', tone: 'bg-red-100 text-red-800' },
+  restore_content: { label: 'Restored content', tone: 'bg-green-100 text-green-800' },
+  dismiss_flags: { label: 'Dismissed flags', tone: 'bg-slate-200 text-slate-700' },
 };
 
 const targetLink = (entry) => {

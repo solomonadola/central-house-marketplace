@@ -4,12 +4,14 @@ import AdminReports from '../components/admin/AdminReports';
 import AdminUsers from '../components/admin/AdminUsers';
 import AdminHiddenListings from '../components/admin/AdminHiddenListings';
 import AdminAuditLog from '../components/admin/AdminAuditLog';
+import AdminContent from '../components/admin/AdminContent';
 
 const TABS = [
   ['overview', 'Overview', AdminOverview],
   ['reports', 'Reports', AdminReports],
   ['users', 'Users', AdminUsers],
   ['hidden', 'Hidden listings', AdminHiddenListings],
+  ['content', 'Reviews & questions', AdminContent],
   ['audit', 'Audit log', AdminAuditLog],
 ];
 

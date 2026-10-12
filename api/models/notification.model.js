@@ -21,6 +21,22 @@ export const NOTIFICATION_TYPES = [
   'application_status',
   'payment_received',
   'payment_refunded',
+  'price_drop',
+  'question_asked',
+  'question_answered',
+  'open_house_cancelled',
+  'maintenance_request',
+  'maintenance_update',
+  'lease_created',
+  'lease_ended',
+  'rent_paid',
+  'rent_waived',
+  'inspection_submitted',
+  'inspection_signed',
+  'inspection_disputed',
+  'content_removed',
+  'rent_reminder',
+  'lease_terms_changed',
 ];
 
 const notificationSchema = new mongoose.Schema(

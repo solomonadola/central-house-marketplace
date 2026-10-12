@@ -11,7 +11,8 @@
     "seed": "node api/seed.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "make-admin": "node api/scripts/setRole.js"
+    "make-admin": "node api/scripts/setRole.js",
+    "rent-reminders": "node api/scripts/sendRentReminders.js"
   },
   "keywords": [],
   "author": "",

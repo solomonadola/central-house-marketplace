@@ -17,6 +17,14 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import path from 'path';
 import { errorHandler } from './utils/error.js';
+import questionRouter from './routes/question.route.js';
+import openHouseRouter from './routes/openHouse.route.js';
+import maintenanceRouter from './routes/maintenance.route.js';
+import quickReplyRouter from './routes/quickReply.route.js';
+import listingDraftRouter from './routes/listingDraft.route.js';
+import leaseRouter from './routes/lease.route.js';
+import inspectionRouter from './routes/inspection.route.js';
+import contentFlagRouter from './routes/contentFlag.route.js';
 
 const __dirname = path.resolve();
 
@@ -56,6 +64,14 @@ app.use('/api/availability', availabilityRouter);
 app.use('/api/applications', applicationRouter);
 app.use('/api/payments', paymentRouter);
 app.use('/api/insights', insightsRouter);
+app.use('/api/questions', questionRouter);
+app.use('/api/open-houses', openHouseRouter);
+app.use('/api/maintenance', maintenanceRouter);
+app.use('/api/quick-replies', quickReplyRouter);
+app.use('/api/listing-drafts', listingDraftRouter);
+app.use('/api/leases', leaseRouter);
+app.use('/api/inspections', inspectionRouter);
+app.use('/api/content-flags', contentFlagRouter);
 
 // Liveness probe for Docker/monitoring.
 app.get('/api/health', (req, res) => {

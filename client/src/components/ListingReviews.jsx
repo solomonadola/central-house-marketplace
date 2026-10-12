@@ -4,6 +4,7 @@ import { FaRegThumbsUp, FaReply } from 'react-icons/fa';
 import StarRating, { StarInput } from './StarRating';
 import { apiFetch } from '../utils/apiFetch';
 import { formatShortTime } from '../utils/formatTime';
+import FlagContentButton from './FlagContentButton';
 
 function ReviewForm({ listingId, ownReview, onSaved }) {
   const [rating, setRating] = useState(ownReview?.rating ?? 0);
@@ -110,7 +111,7 @@ function ReviewItem({ review, canVote, isOwner, onChanged }) {
       </div>
       {review.comment && <p className='text-slate-700 mt-1 whitespace-pre-wrap'>{review.comment}</p>}
 
-      <div className='mt-2 flex items-center gap-3 text-xs'>
+      <div className='mt-2 flex flex-wrap items-center gap-3 text-xs'>
         {canVote ? (
           <button
             type='button'
@@ -124,6 +125,7 @@ function ReviewItem({ review, canVote, isOwner, onChanged }) {
         ) : (
           helpfulCount > 0 && <span className='text-slate-500'>Helpful ({helpfulCount})</span>
         )}
+        {canVote && <FlagContentButton targetType='review' targetId={review._id} />}
         {isOwner && !review.ownerReply && (
           <button type='button' onClick={() => setReplying((v) => !v)} className='flex items-center gap-1 text-slate-500 hover:underline'>
             <FaReply aria-hidden='true' /> Reply
@@ -224,6 +226,12 @@ export default function ListingReviews({ listingId }) {
         </label>
       )}
 
+      {viewer?.ownReview?.removed && (
+        <p className='rounded-lg bg-red-50 p-3 text-sm text-red-800' role='status'>
+          A moderator removed your review, so it isn&apos;t shown to others
+          {viewer.ownReview.removedReason ? `: ${viewer.ownReview.removedReason}` : '.'}
+        </p>
+      )}
       {viewer?.canReview && (
         <>
           <ReviewForm key={viewer.ownReview?._id ?? 'new'} listingId={listingId} ownReview={viewer.ownReview} onSaved={load} />

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { apiFetch } from '../utils/apiFetch';
+import BlockUserButton from './BlockUserButton';
+import QuickReplyPicker from './QuickReplyPicker';
 import { formatTimeOfDay } from '../utils/formatTime';
 
 const DEFAULT_POLL_MS = 5_000;
@@ -25,6 +27,7 @@ export default function ConversationThread({ conversationId, onActivity, pollMs 
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState(null);
+  const [blocked, setBlocked] = useState(false);
   const scrollRef = useRef(null);
   const stickToBottom = useRef(true);
 
@@ -145,7 +148,7 @@ export default function ConversationThread({ conversationId, onActivity, pollMs 
         <Link to='/messages' className='md:hidden text-slate-600' aria-label='Back to conversations'>
           ←
         </Link>
-        <div className='min-w-0'>
+        <div className='min-w-0 flex-1'>
           <p className='font-semibold text-slate-700 truncate'>{otherUser?.username ?? 'Deleted user'}</p>
           {listing ? (
             <Link to={`/listing/${listing._id}`} className='text-xs text-blue-800 hover:underline truncate block'>
@@ -155,6 +158,7 @@ export default function ConversationThread({ conversationId, onActivity, pollMs 
             <p className='text-xs text-slate-500'>Listing removed</p>
           )}
         </div>
+        {otherUser && <BlockUserButton userId={otherUser._id} username={otherUser.username} onChange={setBlocked} />}
       </header>
 
       <div ref={scrollRef} onScroll={handleScroll} className='flex-1 overflow-y-auto p-3 flex flex-col gap-2'>
@@ -187,7 +191,11 @@ export default function ConversationThread({ conversationId, onActivity, pollMs 
         })}
       </div>
 
+      {blocked ? (
+        <p className='border-t p-3 text-sm text-slate-500'>You can&apos;t message each other while one of you has blocked the other.</p>
+      ) : (
       <form onSubmit={send} className='border-t p-3 flex gap-2 items-end'>
+        <QuickReplyPicker onPick={(text) => setBody((current) => (current ? `${current}\n${text}` : text))} />
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
@@ -206,6 +214,7 @@ export default function ConversationThread({ conversationId, onActivity, pollMs 
           {sending ? 'Sending...' : 'Send'}
         </button>
       </form>
+      )}
       {sendError && <p className='px-3 pb-2 text-sm text-red-700'>{sendError}</p>}
     </div>
   );
