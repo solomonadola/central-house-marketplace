@@ -24,6 +24,9 @@ const rentChargeSchema = new mongoose.Schema(
     note: { type: String, trim: true, maxlength: 300, default: '' },
     // Who marked it paid or waived.
     settledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    // Reminders already sent to the tenant (see utils/rentReminders.js), so
+    // each one goes out once.
+    remindersSent: { type: [String], default: [] },
   },
   { timestamps: true }
 );
