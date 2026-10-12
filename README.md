@@ -41,6 +41,40 @@ Central House Marketplace is a platform where you can find houses for rent and s
 - **Recently viewed** – a private, on-device history of homes you have opened.
 - **Admin tools** – a reports queue, user suspension, hidden listings, an audit
   log of every moderation action and a per-user detail page.
+- **Price history and price-drop alerts** – every listing shows its past
+  prices, and people who saved it are notified when the price falls.
+- **Price comparison** – how a listing's price per bedroom compares with
+  similar homes of the same type nearby.
+- **Questions and answers** – ask an owner a public question about a listing;
+  answered questions are shown to everyone.
+- **Open houses** – owners schedule public viewing times with an optional
+  capacity, visitors RSVP, and everyone is told if one is cancelled. All
+  upcoming ones are on the *Open houses* page.
+- **Rent and leases** – after approving a rental application, an owner sets up
+  a lease (rent, due day, start and end). Every month gets a rent charge the
+  tenant can pay online (simulated) or the owner can record as paid by cash,
+  transfer or check, or waive. Both sides see the balance, overdue months and a
+  downloadable ledger, and owners get a rental income chart.
+- **Move-in and move-out inspections** – owners write a room-by-room condition
+  report, the tenant signs or disputes it, and the move-out report shows what
+  got worse since move-in.
+- **Maintenance requests** – tenants report problems with the home they rent
+  and follow the repair from open to resolved.
+- **Mortgage calculator** – monthly payment, total interest and a yearly payoff
+  schedule on homes for sale.
+- **Listing drafts** – save an unfinished listing and publish it later.
+- **Quick replies** – owners save answers they send often and insert them into
+  a message with one click.
+- **Owner response stats** – how often and how quickly an owner replies,
+  shown on listings and owner profiles.
+- **Blocking** – block a user so neither of you can message the other.
+- **Two-step sign-in** – optionally require a code sent by email after the
+  password.
+- **Download my data** – export everything stored about your account as JSON.
+- **Content moderation** – anyone signed in can report a review or question;
+  admins remove it (with a reason sent to the author) or dismiss the reports
+  from the *Reviews & questions* tab, and can restore removed content. Removed
+  reviews no longer count towards a listing's rating.
 
 ## Tech stack
 
@@ -102,7 +136,10 @@ npm install --prefix client
 npm run seed
 ```
 
-This creates 4 demo users (with confirmed emails) and an admin, 20 listings in San Francisco neighbourhoods with 30 days of view history, and sample conversations, reviews and viewing requests. Sign in with `sarah_homes@demo.centralhouse.local` / `password123`. Re-running the command only replaces the demo data and never touches other accounts.
+This creates 4 demo users (with confirmed emails) and an admin, 20 listings in San Francisco neighbourhoods with 30 days of view history, and sample conversations, reviews and viewing requests. It also adds price
+history, questions, open houses, quick replies, a draft listing, a lease with
+three paid months and one due, a maintenance request and a flagged question for
+the moderation queue. Sign in with `sarah_homes@demo.centralhouse.local` / `password123`. Re-running the command only replaces the demo data and never touches other accounts.
 
 ### Email
 
@@ -317,6 +354,53 @@ Beyond the core routes above, the app exposes:
 | GET | `/api/admin/users/:id` 🛡 | A user's profile, stats, listings and recent actions |
 | GET | `/api/admin/reports/export` 🛡 | Reports, as CSV |
 | GET | `/api/insights` | Public aggregate marketplace statistics |
+| GET | `/api/listing/:id/price-history` | Price changes for a listing |
+| GET | `/api/listing/:id/price-comparison` | How the price compares with similar homes |
+| GET | `/api/questions/listing/:id` | Questions on a listing |
+| POST | `/api/questions/listing/:id` 🔒 | Ask a question |
+| POST | `/api/questions/:id/answer` 🔒 | Owner answers a question |
+| DELETE | `/api/questions/:id` 🔒 | Delete a question (owner, or asker while unanswered) |
+| GET | `/api/open-houses/upcoming` | Upcoming open houses across all listings |
+| GET | `/api/open-houses/mine` 🔒 | Open houses you host or RSVP'd to |
+| GET | `/api/open-houses/listing/:id` | Open houses for a listing |
+| POST | `/api/open-houses/listing/:id` 🔒 | Owner schedules an open house |
+| POST | `/api/open-houses/:id/rsvp` 🔒 | RSVP (`DELETE` to cancel the RSVP) |
+| POST | `/api/open-houses/:id/cancel` 🔒 | Owner cancels an open house |
+| GET | `/api/leases` 🔒 | Leases you rent (`?as=owner` for those you let) |
+| GET | `/api/leases/candidates` 🔒 | Approved rental applications without a lease |
+| GET | `/api/leases/income` 🔒 | Rent expected and collected per month (`?months=`) |
+| POST | `/api/leases` 🔒 | Owner sets up a lease |
+| GET | `/api/leases/:id` 🔒 | A lease with its monthly charges and balance |
+| GET | `/api/leases/:id/export` 🔒 | The rent ledger, as CSV |
+| POST | `/api/leases/:id/end` 🔒 | Owner ends a lease |
+| POST | `/api/leases/:id/charges/:chargeId/pay` 🔒 | Tenant pays a month online |
+| POST | `/api/leases/:id/charges/:chargeId/record\|waive` 🔒 | Owner records an offline payment or waives a month |
+| GET | `/api/inspections?leaseId=` 🔒 | Inspection reports on a lease |
+| POST | `/api/inspections` 🔒 | Owner starts a move-in or move-out report |
+| GET/PATCH/DELETE | `/api/inspections/:id` 🔒 | Read, edit (draft or disputed) or delete (draft) a report |
+| POST | `/api/inspections/:id/submit\|sign\|dispute` 🔒 | Owner sends it; tenant signs or disputes |
+| GET | `/api/maintenance` 🔒 | Your requests (`?as=owner`, `?status=`) |
+| GET | `/api/maintenance/eligible` 🔒 | Rentals you can report problems for |
+| GET | `/api/maintenance/summary` 🔒 | Open request counts for owners |
+| POST | `/api/maintenance` 🔒 | Report a problem |
+| GET | `/api/maintenance/:id` 🔒 | A request with its updates |
+| POST | `/api/maintenance/:id/updates` 🔒 | Comment and/or change the status |
+| GET/POST | `/api/quick-replies` 🔒 | Your quick replies |
+| PATCH/DELETE | `/api/quick-replies/:id` 🔒 | Edit or delete a quick reply |
+| GET/POST | `/api/listing-drafts` 🔒 | Your listing drafts |
+| GET/PUT/DELETE | `/api/listing-drafts/:id` 🔒 | Read, save or delete a draft |
+| POST | `/api/listing-drafts/:id/publish` 🔒 | Publish a draft as a listing |
+| GET | `/api/user/blocks` 🔒 | Users you blocked |
+| GET/PUT/DELETE | `/api/user/blocks/:id` 🔒 | Check, block or unblock a user |
+| GET | `/api/user/export` 🔒 | Everything stored about you, as JSON |
+| POST | `/api/user/two-factor` 🔒 | Turn two-step sign-in on or off (needs your password) |
+| POST | `/api/auth/verify-2fa` | Finish signing in with the emailed code |
+| POST | `/api/auth/resend-2fa` | Send a new sign-in code |
+| GET | `/api/user/public/:id/response-stats` | How often and how fast an owner replies |
+| POST | `/api/content-flags` 🔒 | Report a review or question |
+| GET | `/api/admin/content/flagged` 🛡 | Reported content, most-reported first |
+| GET | `/api/admin/content/removed` 🛡 | Recently removed content |
+| POST | `/api/admin/content/:type/:id/remove\|restore\|dismiss` 🛡 | Remove, restore, or keep and dismiss reports |
 
 ## License
 
