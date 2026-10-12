@@ -11,6 +11,7 @@ import ListingDraft from '../models/listingDraft.model.js';
 import Lease from '../models/lease.model.js';
 import RentCharge from '../models/rentCharge.model.js';
 import { removeLeases } from '../utils/leases.js';
+import ContentFlag from '../models/contentFlag.model.js';
 import { syncCharges } from '../controllers/lease.controller.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -27,6 +28,7 @@ export const removeEngagement = async (userIds, listingIds) => {
     QuickReply.deleteMany({ owner: { $in: userIds } }),
     ListingDraft.deleteMany({ owner: { $in: userIds } }),
     removeLeases({ $or: [{ tenant: { $in: userIds } }, { owner: { $in: userIds } }] }),
+    ContentFlag.deleteMany({ $or: [{ listing: { $in: listingIds } }, { reporter: { $in: userIds } }] }),
   ]);
 };
 
@@ -52,7 +54,7 @@ export const seedEngagement = async ({ users, listings, now = Date.now() }) => {
   });
   await PriceChange.insertMany(priceChanges);
 
-  await ListingQuestion.insertMany([
+  const questions = await ListingQuestion.insertMany([
     {
       listing: listings[0]._id,
       asker: david._id,
@@ -69,6 +71,16 @@ export const seedEngagement = async ({ users, listings, now = Date.now() }) => {
     },
     { listing: listings[4]._id, asker: james._id, question: 'Is there storage for bikes?', createdAt: ago(1) },
   ]);
+
+  // One question waiting in the admin moderation queue.
+  await ContentFlag.create({
+    targetType: 'question',
+    target: questions[2]._id,
+    listing: questions[2].listing,
+    reporter: maria._id,
+    reason: 'off_topic',
+    details: 'Demo flag so the moderation tab has something to show.',
+  });
 
   await OpenHouse.insertMany([
     {
