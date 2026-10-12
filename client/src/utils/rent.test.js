@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chargeStateInfo, formatLeaseDate, ordinal, periodLabel, toDateInput } from './rent';
+import { chargeStateInfo, formatLeaseDate, ordinal, periodLabel, toDateInput, upcomingPeriods } from './rent';
 
 describe('rent helpers', () => {
   it('labels periods with the month name', () => {
@@ -34,5 +34,9 @@ describe('rent helpers', () => {
   it('falls back for unknown charge states', () => {
     expect(chargeStateInfo('overdue').label).toBe('Overdue');
     expect(chargeStateInfo('mystery').label).toBe('mystery');
+  });
+
+  it('lists the coming months, starting next month', () => {
+    expect(upcomingPeriods(3, new Date('2026-11-20T12:00:00Z'))).toEqual(['2026-12', '2027-01', '2027-02']);
   });
 });

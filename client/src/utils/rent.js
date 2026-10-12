@@ -44,3 +44,9 @@ export const formatLeaseDate = (date) =>
 
 // 'YYYY-MM-DD' for <input type="date">.
 export const toDateInput = (date) => new Date(date).toISOString().slice(0, 10);
+
+// 'YYYY-MM' for the next `count` months, starting next month.
+export const upcomingPeriods = (count, today = new Date()) =>
+  Array.from({ length: count }, (_, i) =>
+    new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1 + i, 1)).toISOString().slice(0, 7)
+  );
