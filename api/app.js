@@ -22,6 +22,7 @@ import openHouseRouter from './routes/openHouse.route.js';
 import maintenanceRouter from './routes/maintenance.route.js';
 import quickReplyRouter from './routes/quickReply.route.js';
 import listingDraftRouter from './routes/listingDraft.route.js';
+import leaseRouter from './routes/lease.route.js';
 
 const __dirname = path.resolve();
 
@@ -66,6 +67,7 @@ app.use('/api/open-houses', openHouseRouter);
 app.use('/api/maintenance', maintenanceRouter);
 app.use('/api/quick-replies', quickReplyRouter);
 app.use('/api/listing-drafts', listingDraftRouter);
+app.use('/api/leases', leaseRouter);
 
 // Liveness probe for Docker/monitoring.
 app.get('/api/health', (req, res) => {

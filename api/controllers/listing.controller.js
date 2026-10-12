@@ -16,6 +16,7 @@ import PriceChange from '../models/priceChange.model.js';
 import ListingQuestion from '../models/listingQuestion.model.js';
 import OpenHouse from '../models/openHouse.model.js';
 import MaintenanceRequest from '../models/maintenanceRequest.model.js';
+import { removeLeases } from '../utils/leases.js';
 import { comparePrice } from '../utils/priceComparison.js';
 import { dropFromPeak, recordInitialPrice, recordPriceChange } from '../utils/priceHistory.js';
 
@@ -88,6 +89,7 @@ export const deleteListing = async (req, res, next) => {
     const byListing = { listing: listing._id };
     await Promise.all([
       User.updateMany({ favorites: listing._id }, { $pull: { favorites: listing._id } }),
+      removeLeases(byListing),
       ...[
         Review,
         Viewing,

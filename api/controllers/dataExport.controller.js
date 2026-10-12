@@ -14,6 +14,8 @@ import OpenHouse from '../models/openHouse.model.js';
 import MaintenanceRequest from '../models/maintenanceRequest.model.js';
 import QuickReply from '../models/quickReply.model.js';
 import ListingDraft from '../models/listingDraft.model.js';
+import Lease from '../models/lease.model.js';
+import RentCharge from '../models/rentCharge.model.js';
 import { errorHandler } from '../utils/error.js';
 
 export const EXPORT_VERSION = 1;
@@ -51,6 +53,7 @@ export const exportMyData = async (req, res, next) => {
       maintenanceRequests,
       quickReplies,
       listingDrafts,
+      leases,
     ] = await Promise.all([
       Listing.find({ userRef: userId }).lean(),
       Message.find({ conversation: { $in: conversationIds } }).sort({ createdAt: 1 }).lean(),
@@ -66,7 +69,11 @@ export const exportMyData = async (req, res, next) => {
       MaintenanceRequest.find({ $or: [{ tenant: userId }, { owner: userId }] }, '-updates').populate('listing', 'name').lean(),
       QuickReply.find({ owner: userId }, 'title body').lean(),
       ListingDraft.find({ owner: userId }, 'data updatedAt').lean(),
+      Lease.find({ $or: [{ tenant: userId }, { owner: userId }] }).populate('listing', 'name').lean(),
     ]);
+    const rentCharges = await RentCharge.find({ lease: { $in: leases.map((l) => l._id) } }, '-settledBy')
+      .sort({ period: 1 })
+      .lean();
 
     const usernames = new Map();
     conversations.forEach((c) => {
@@ -115,6 +122,10 @@ export const exportMyData = async (req, res, next) => {
       maintenanceRequests,
       quickReplies,
       listingDrafts,
+      leases: leases.map((lease) => ({
+        ...lease,
+        rentCharges: rentCharges.filter((c) => c.lease.toString() === lease._id.toString()),
+      })),
       notifications,
     };
 

@@ -18,6 +18,7 @@ import OpenHouse from '../models/openHouse.model.js';
 import MaintenanceRequest from '../models/maintenanceRequest.model.js';
 import QuickReply from '../models/quickReply.model.js';
 import ListingDraft from '../models/listingDraft.model.js';
+import { removeLeases } from '../utils/leases.js';
 import { updateListingRating } from '../utils/ratings.js';
 import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
 import { getResponseStats } from '../utils/responseStats.js';
@@ -95,6 +96,7 @@ export const deleteUser = async (req, res, next) => {
       ListingQuestion.deleteMany({ $or: [onTheirListings, { asker: userId }] }),
       OpenHouse.updateMany({ 'rsvps.user': userId }, { $pull: { rsvps: { user: userId } } }),
       MaintenanceRequest.deleteMany({ $or: [{ tenant: userId }, { owner: userId }] }),
+      removeLeases({ $or: [{ tenant: userId }, { owner: userId }] }),
       User.updateMany({ favorites: { $in: listingIds } }, { $pull: { favorites: { $in: listingIds } } }),
       // Reviews on their listings, and reviews they wrote elsewhere.
       Review.deleteMany({ $or: [onTheirListings, { author: userId }] }),
