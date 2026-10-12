@@ -63,7 +63,7 @@ export default function RentIncome() {
           <dt className='text-slate-500'>Overdue</dt>
           <dd className={`text-lg font-semibold ${totals.overdue > 0 ? 'text-red-700' : 'text-slate-900'}`}>
             {formatMoney(totals.overdue)}
-            {totals.overdueCount > 0 && <span className='ml-1 text-xs font-normal text-slate-500'>({totals.overdueCount} months)</span>}
+            {totals.overdueCount > 0 && <span className='ml-1 text-xs font-normal text-slate-500'>({totals.overdueCount} {totals.overdueCount === 1 ? 'month' : 'months'})</span>}
           </dd>
         </div>
       </dl>

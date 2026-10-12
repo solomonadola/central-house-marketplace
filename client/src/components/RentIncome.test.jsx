@@ -33,7 +33,7 @@ describe('RentIncome', () => {
     expect(await screen.findByText('$3,000')).toBeInTheDocument();
     expect(screen.getByText('40%')).toBeInTheDocument();
     expect(screen.getByText('$4,500')).toBeInTheDocument();
-    expect(screen.getByText('(1 months)')).toBeInTheDocument();
+    expect(screen.getByText('(1 month)')).toBeInTheDocument();
     const bars = within(screen.getByRole('list', { name: 'Rent by month' })).getAllByRole('listitem');
     expect(bars.map((b) => b.getAttribute('aria-label'))).toEqual([
       'Aug: $1,500 of $1,500 collected',
