@@ -330,6 +330,45 @@ describe('ending a lease', () => {
   });
 });
 
+describe('rental income', () => {
+  it('totals expected and collected rent by month for the owner', async () => {
+    const { ownerAgent, tenantAgent, view, leaseId } = await leased();
+    await tenantAgent.post(`/api/leases/${leaseId}/charges/${view.charges.at(-1)._id}/pay`);
+    await ownerAgent.post(`/api/leases/${leaseId}/charges/${view.charges[1]._id}/waive`).send({});
+
+    const res = await ownerAgent.get('/api/leases/income?months=4');
+
+    expect(res.status).toBe(200);
+    expect(res.body.months).toHaveLength(4);
+    expect(res.body.months.map((m) => m.expected)).toEqual([0, 1500, 0, 1500]);
+    expect(res.body.months.map((m) => m.collected)).toEqual([0, 1500, 0, 0]);
+    expect(res.body.totals).toEqual({
+      activeLeases: 1,
+      expected: 3000,
+      collected: 1500,
+      outstanding: 1500,
+      overdue: expect.any(Number),
+      overdueCount: expect.any(Number),
+    });
+  });
+
+  it('defaults to six months and caps the range', async () => {
+    const { ownerAgent } = await leased();
+
+    expect((await ownerAgent.get('/api/leases/income')).body.months).toHaveLength(6);
+    expect((await ownerAgent.get('/api/leases/income?months=500')).body.months).toHaveLength(24);
+    expect((await ownerAgent.get('/api/leases/income?months=abc')).body.months).toHaveLength(6);
+  });
+
+  it("is empty for someone who doesn't let any homes", async () => {
+    const { tenantAgent } = await leased();
+
+    const res = await tenantAgent.get('/api/leases/income');
+
+    expect(res.body.totals).toMatchObject({ activeLeases: 0, expected: 0, outstanding: 0 });
+  });
+});
+
 describe('rent ledger export', () => {
   it('downloads every month as CSV, oldest first', async () => {
     const { tenantAgent, view, leaseId } = await leased();

@@ -5,7 +5,16 @@ import Listing from '../models/listing.model.js';
 import User from '../models/user.model.js';
 import { errorHandler } from '../utils/error.js';
 import { sendCsv, toCsv } from '../utils/csv.js';
-import { dueDateFor, periodLabel, periodsBetween, summarizeCharges, chargeState, daysOverdue } from '../utils/rent.js';
+import {
+  chargeState,
+  daysOverdue,
+  dueDateFor,
+  incomeByPeriod,
+  periodLabel,
+  periodsBetween,
+  recentPeriods,
+  summarizeCharges,
+} from '../utils/rent.js';
 import { notifyLeaseCreated, notifyLeaseEnded, notifyRentPaid, notifyRentWaived } from '../utils/notifications.js';
 
 const populate = (query) =>
@@ -160,6 +169,38 @@ export const listLeases = async (req, res, next) => {
         ),
       }))
     );
+  } catch (error) {
+    next(error);
+  }
+};
+
+const MAX_INCOME_MONTHS = 24;
+
+// The owner's rent across all their leases: expected and collected per month
+// for the last ?months= months (6 by default), and what tenants owe now.
+export const getIncome = async (req, res, next) => {
+  try {
+    const months = Math.min(Math.max(Number.parseInt(req.query.months, 10) || 6, 1), MAX_INCOME_MONTHS);
+    const today = new Date();
+    const periods = recentPeriods(months, today);
+
+    const leases = await Lease.find({ owner: req.user.id });
+    await Promise.all(leases.filter((l) => l.status === 'active').map((l) => syncCharges(l, today)));
+    const charges = await RentCharge.find({ lease: { $in: leases.map((l) => l._id) } }).lean();
+
+    const outstanding = summarizeCharges(charges, today);
+    const byMonth = incomeByPeriod(charges, periods);
+    res.status(200).json({
+      months: byMonth,
+      totals: {
+        activeLeases: leases.filter((l) => l.status === 'active').length,
+        expected: byMonth.reduce((sum, m) => sum + m.expected, 0),
+        collected: byMonth.reduce((sum, m) => sum + m.collected, 0),
+        outstanding: outstanding.balance,
+        overdue: outstanding.overdueAmount,
+        overdueCount: outstanding.overdueCount,
+      },
+    });
   } catch (error) {
     next(error);
   }

@@ -85,3 +85,24 @@ export const summarizeCharges = (charges, today = new Date()) => {
 // "October 2026" for '2026-10'.
 export const periodLabel = (period) =>
   dueDateFor(period, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+// The last `count` periods up to and including today's, oldest first.
+export const recentPeriods = (count, today = new Date()) => {
+  const d = new Date(today);
+  return Array.from({ length: count }, (_, i) =>
+    periodKey(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - (count - 1 - i), 1)))
+  );
+};
+
+// Rent expected and collected in each period across many leases' charges.
+// Waived months count as neither: nobody expects that money any more.
+export const incomeByPeriod = (charges, periods) => {
+  const rows = new Map(periods.map((period) => [period, { period, expected: 0, collected: 0 }]));
+  charges.forEach((charge) => {
+    const row = rows.get(charge.period);
+    if (!row || charge.status === 'waived') return;
+    row.expected += charge.amount;
+    if (charge.status === 'paid') row.collected += charge.amount;
+  });
+  return [...rows.values()];
+};

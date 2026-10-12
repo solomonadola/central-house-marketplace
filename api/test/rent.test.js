@@ -3,10 +3,12 @@ import {
   chargeState,
   daysOverdue,
   dueDateFor,
+  incomeByPeriod,
   nextPeriod,
   periodKey,
   periodLabel,
   periodsBetween,
+  recentPeriods,
   summarizeCharges,
 } from '../utils/rent.js';
 
@@ -102,5 +104,26 @@ describe('summarizeCharges', () => {
   it('has nothing due when everything is settled', () => {
     const summary = summarizeCharges([{ period: '2026-10', amount: 900, status: 'paid', dueDate: day('2026-10-01') }]);
     expect(summary).toMatchObject({ balance: 0, overdueCount: 0, nextDue: null });
+  });
+});
+
+describe('income', () => {
+  it('lists recent periods oldest first, across a year end', () => {
+    expect(recentPeriods(3, day('2027-01-15'))).toEqual(['2026-11', '2026-12', '2027-01']);
+  });
+
+  it('adds up expected and collected rent per period, ignoring waived months', () => {
+    const charges = [
+      { period: '2026-09', amount: 1000, status: 'paid' },
+      { period: '2026-09', amount: 800, status: 'unpaid' },
+      { period: '2026-10', amount: 1000, status: 'waived' },
+      { period: '2026-10', amount: 800, status: 'paid' },
+      { period: '2025-01', amount: 999, status: 'paid' },
+    ];
+
+    expect(incomeByPeriod(charges, ['2026-09', '2026-10'])).toEqual([
+      { period: '2026-09', expected: 1800, collected: 1000 },
+      { period: '2026-10', expected: 800, collected: 800 },
+    ]);
   });
 });

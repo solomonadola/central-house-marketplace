@@ -3,6 +3,7 @@ import {
   createLease,
   endLease,
   exportLedger,
+  getIncome,
   getLease,
   listLeaseCandidates,
   listLeases,
@@ -23,6 +24,7 @@ router.use(verifyToken);
 
 router.get('/', listLeases);
 router.get('/candidates', listLeaseCandidates);
+router.get('/income', getIncome);
 router.post('/', validate(createLeaseSchema), createLease);
 router.get('/:id', getLease);
 router.get('/:id/export', exportLedger);
