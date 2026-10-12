@@ -38,6 +38,7 @@ import Maintenance from './pages/Maintenance';
 import MaintenanceDetail from './pages/MaintenanceDetail';
 import Rent from './pages/Rent';
 import LeaseDetail from './pages/LeaseDetail';
+import InspectionDetail from './pages/InspectionDetail';
 import NotFound from './pages/NotFound';
 import AdminUserDetail from './components/admin/AdminUserDetail';
 
@@ -76,6 +77,7 @@ export default function App() {
           <Route path='/maintenance/:requestId' element={<MaintenanceDetail />} />
           <Route path='/rent' element={<Rent />} />
           <Route path='/leases/:leaseId' element={<LeaseDetail />} />
+          <Route path='/inspections/:inspectionId' element={<InspectionDetail />} />
           <Route path='/applications' element={<Applications />} />
           <Route path='/payments' element={<Payments />} />
           <Route path='/settings' element={<Settings />} />
