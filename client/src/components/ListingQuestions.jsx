@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { useFetchJson } from '../hooks/useFetchJson';
 import { apiFetch } from '../utils/apiFetch';
 import { formatShortTime } from '../utils/formatTime';
+import FlagContentButton from './FlagContentButton';
 
 const postJson = async (url, body) => {
   const res = await apiFetch(url, {
@@ -165,7 +166,8 @@ export default function ListingQuestions({ listingId }) {
                   }}
                 />
               )}
-              <div className='mt-2 flex gap-3 text-xs'>
+              <div className='mt-2 flex flex-wrap gap-3 text-xs'>
+                {currentUser && !isAsker && <FlagContentButton targetType='question' targetId={q._id} />}
                 {viewer?.isOwner && answered && editing !== q._id && (
                   <button type='button' onClick={() => setEditing(q._id)} className='text-slate-600 hover:underline'>
                     Edit answer
